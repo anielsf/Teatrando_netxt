@@ -8,7 +8,6 @@
 import { useCallback, useEffect } from 'react';
 import { useAppStore } from '@/store/appStore';
 
-const BCV_FALLBACK = 798.33;
 
 export function useCurrency() {
   const { tasaBCV, setTasaBCV } = useAppStore();
@@ -23,7 +22,8 @@ export function useCurrency() {
         }
       }
     } catch {
-      setTasaBCV(BCV_FALLBACK);
+      // Conserva la última tasa verificada en el store. No sustituimos
+      // la tasa oficial por un número fijo que pueda quedar desactualizado.
     }
   }, [setTasaBCV]);
 

@@ -61,75 +61,87 @@ async function GET(req: Request) {
     semanasHistoricas = [DATOS_DEFECTO_SEMANA_2];
   }
 
-  // 2. Métricas dinámicas en tiempo real del sistema por género, compras y críticas
+  // 2. Métricas dinámicas.
+  // Las semanas históricas son públicas, pero las métricas que contienen
+  // ventas, críticas y datos de clientes no deben exponerse a visitantes.
   let metricasGrupo: any = null;
-  const filtroGrupo = grupo || (user?.rol === 'Grupo th' ? user.nombre : null);
+  const puedeVerMetricas = user?.rol === 'Admin' || user?.rol === 'Grupo th';
 
-  try {
-    // Ventas agrupadas por género
-    const whereGrupo = filtroGrupo ? 'WHERE c.grupo_teatral = $1' : '';
-    const params = filtroGrupo ? [filtroGrupo] : [];
+  if (puedeVerMetricas) {
+    // Grupo TH solo puede consultar sus propios datos. Admin puede usar
+    // ?grupo= para filtrar o dejarlo vacío para ver el consolidado general.
+    const filtroGrupo =
+      user?.rol === 'Grupo th'
+        ? user.nombre
+        : grupo || null;
 
-    const ventasPorGenero = await query(`
-      SELECT
-        COALESCE(c.genero, 'Otros') AS genero,
-        COUNT(t.id) AS total_boletos,
-        COALESCE(SUM(t.precio_usd), 0) AS total_usd,
-        COALESCE(SUM(t.precio_ves), 0) AS total_ves
-      FROM public.carteleras c
-      LEFT JOIN public.tickets t ON t.id_obra = c.id
-      ${whereGrupo}
-      GROUP BY c.genero
-      ORDER BY total_usd DESC
-    `, params);
+    try {
+      const whereGrupo = filtroGrupo ? 'WHERE c.grupo_teatral = $1' : '';
+      const params = filtroGrupo ? [filtroGrupo] : [];
 
-    // Críticas recibidas y promedio de estrellas
-    const criticasPorObra = await query(`
-      SELECT
-        c.id,
-        c.obra,
-        c.grupo_teatral,
-        COALESCE(AVG(i.estrellas), 5.0) AS promedio_estrellas,
-        COUNT(i.id) AS total_criticas
-      FROM public.carteleras c
-      LEFT JOIN public.interacciones i ON i.id_obra = c.id AND i.tipo = 'critica'
-      ${whereGrupo}
-      GROUP BY c.id, c.obra, c.grupo_teatral
-      ORDER BY promedio_estrellas DESC
-    `, params);
+      // Ventas agrupadas por género
+      const ventasPorGenero = await query(`
+        SELECT
+          COALESCE(c.genero, 'Otros') AS genero,
+          COUNT(t.id) AS total_boletos,
+          COALESCE(SUM(t.precio_usd), 0) AS total_usd,
+          COALESCE(SUM(t.precio_ves), 0) AS total_ves
+        FROM public.carteleras c
+        LEFT JOIN public.tickets t ON t.id_obra = c.id
+        ${whereGrupo}
+        GROUP BY c.genero
+        ORDER BY total_usd DESC
+      `, params);
 
-    // Desglose de compras por función y butaca
-    const comprasDetalladas = await query(`
-      SELECT
-        t.ticket_id,
-        t.obra,
-        t.asiento,
-        t.fecha_funcion,
-        t.precio_usd,
-        t.precio_ves,
-        t.ref_pago,
-        t.nombre_cliente,
-        t.email_cliente,
-        t.created_at,
-        c.grupo_teatral,
-        c.genero
-      FROM public.tickets t
-      JOIN public.carteleras c ON t.id_obra = c.id
-      ${whereGrupo ? 'WHERE c.grupo_teatral = $1' : ''}
-      ORDER BY t.created_at DESC
-      LIMIT 100
-    `, params);
+      // Críticas recibidas y promedio de estrellas
+      const criticasPorObra = await query(`
+        SELECT
+          c.id,
+          c.obra,
+          c.grupo_teatral,
+          COALESCE(AVG(i.estrellas), 5.0) AS promedio_estrellas,
+          COUNT(i.id) AS total_criticas
+        FROM public.carteleras c
+        LEFT JOIN public.interacciones i ON i.id_obra = c.id AND i.tipo = 'critica'
+        ${whereGrupo}
+        GROUP BY c.id, c.obra, c.grupo_teatral
+        ORDER BY promedio_estrellas DESC
+      `, params);
 
-    metricasGrupo = {
-      grupo: filtroGrupo || 'General',
-      ventasPorGenero,
-      criticasPorObra,
-      comprasDetalladas,
-    };
-  } catch (err) {
-    logger.warn('Error calculando métricas de grupo', { err: (err as any).message });
+      // Desglose de compras: solo disponible dentro del área administrativa.
+      const comprasDetalladas = await query(`
+        SELECT
+          t.ticket_id,
+          t.obra,
+          t.asiento,
+          t.fecha_funcion,
+          t.precio_usd,
+          t.precio_ves,
+          t.ref_pago,
+          t.nombre_cliente,
+          t.email_cliente,
+          t.created_at,
+          c.grupo_teatral,
+          c.genero
+        FROM public.tickets t
+        JOIN public.carteleras c ON t.id_obra = c.id
+        ${whereGrupo ? 'WHERE c.grupo_teatral = $1' : ''}
+        ORDER BY t.created_at DESC
+        LIMIT 100
+      `, params);
+
+      metricasGrupo = {
+        grupo: filtroGrupo || 'General',
+        ventasPorGenero,
+        criticasPorObra,
+        comprasDetalladas,
+      };
+    } catch (err) {
+      logger.warn('Error calculando métricas de grupo', {
+        err: (err as any).message,
+      });
+    }
   }
-
   return Response.json({
     semanasHistoricas,
     semanaActual: semanasHistoricas[0] || DATOS_DEFECTO_SEMANA_2,

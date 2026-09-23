@@ -108,7 +108,7 @@ export const useAppStore = create<AppState>()(
       carteleraSeleccionada: null,
       setCarteleraSeleccionada: (cartelera) => set({ carteleraSeleccionada: cartelera }),
 
-      tasaBCV: 798.33,
+      tasaBCV: 0,
       setTasaBCV: (tasa) => set({ tasaBCV: tasa }),
 
       tema: temaDefault,
@@ -121,7 +121,7 @@ export const useAppStore = create<AppState>()(
       setActiveView: (view) => set({ activeView: view }),
     }),
     {
-      name: 'teatrando-store',
+      name: 'teatrando-store-v2',
       storage: createJSONStorage(() => sessionStorage),
       // Solo persistir lo necesario (no las carteleras completas)
       partialize: (state) => ({

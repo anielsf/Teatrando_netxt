@@ -20,7 +20,9 @@ export function Navbar() {
   const navLinks = [
     { href: '/', label: 'Inicio', show: true },
     { href: '/cartelera', label: 'Cartelera', show: true },
-    { href: '/cuenta', label: 'Mi Cuenta', show: isAuthenticated },
+    // Grupo TH no tiene área "Mi Cuenta" en el producto.
+    { href: '/cuenta', label: 'Mi Cuenta', show: isAuthenticated && !isGrupoTH },
+    { href: '/estadisticas', label: '🏛️ Microteatral & Semanas Pasadas', show: true },
     { href: '/admin', label: isAdmin ? 'Administrar' : 'Gestión Grupo TH', show: isAdmin || isGrupoTH },
   ];
 

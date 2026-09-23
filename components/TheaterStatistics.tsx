@@ -31,6 +31,49 @@ interface TheaterStatisticsProps {
   onAbrirSuscripciones?: () => void;
 }
 
+// Parsea de forma segura campos que pueden llegar como string JSONB desde PostgreSQL
+function parseCampoJSON<T>(valor: T | string | null | undefined, defecto: T): T {
+  if (valor === null || valor === undefined) return defecto;
+  if (typeof valor === 'string') {
+    try { return JSON.parse(valor) as T; } catch { return defecto; }
+  }
+  return valor as T;
+}
+
+function normalizarSemana(s: SemanaEstadistica): SemanaEstadistica {
+  const generos = parseCampoJSON(s.generos_comparativa, {
+    comedia_s1: 0, drama_s1: 0, otros_s1: 0,
+    comedia_s2: 0, drama_s2: 0, otros_s2: 0,
+  });
+
+  return {
+    ...s,
+    // node-postgres puede devolver columnas numeric como string.
+    semana_numero: Number(s.semana_numero) || 0,
+    salas_activas: Number(s.salas_activas) || 0,
+    capacidad_semanal: Number(s.capacidad_semanal) || 0,
+    entradas_semana: Number(s.entradas_semana) || 0,
+    valoracion_critica: Number(s.valoracion_critica) || 0,
+    entradas_por_dia: parseCampoJSON(s.entradas_por_dia, []).map((d: any) => ({
+      dia: String(d?.dia ?? ''),
+      promo: String(d?.promo ?? ''),
+      cantidad: Number(d?.cantidad) || 0,
+    })),
+    top_salas: parseCampoJSON(s.top_salas, []).map((sala: any) => ({
+      sala: String(sala?.sala ?? ''),
+      asistencia: Number(sala?.asistencia) || 0,
+    })),
+    generos_comparativa: {
+      comedia_s1: Number(generos.comedia_s1) || 0,
+      drama_s1: Number(generos.drama_s1) || 0,
+      otros_s1: Number(generos.otros_s1) || 0,
+      comedia_s2: Number(generos.comedia_s2) || 0,
+      drama_s2: Number(generos.drama_s2) || 0,
+      otros_s2: Number(generos.otros_s2) || 0,
+    },
+  };
+}
+
 export function TheaterStatistics({ isAdmin = false, onAbrirSuscripciones }: TheaterStatisticsProps) {
   const [datos, setDatos] = useState<SemanaEstadistica | null>(null);
   const [semanas, setSemanas] = useState<SemanaEstadistica[]>([]);
@@ -38,6 +81,7 @@ export function TheaterStatistics({ isAdmin = false, onAbrirSuscripciones }: The
   const [modalFormOpen, setModalFormOpen] = useState(false);
   const [tooltipDia, setTooltipDia] = useState<{ dia: string; cantidad: number; promo: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Formulario para que el admin agregue/edite semanas pasadas
   const [formSemana, setFormSemana] = useState({
@@ -58,18 +102,34 @@ export function TheaterStatistics({ isAdmin = false, onAbrirSuscripciones }: The
   });
 
   const cargarEstadisticas = async () => {
+    setErrorMsg(null);
     try {
       const res = await fetch('/api/estadisticas');
       if (res.ok) {
         const json = await res.json();
-        setSemanas(json.semanasHistoricas || []);
-        setDatos(json.semanaActual);
-        if (json.semanaActual?.semana_numero) {
-          setSemanaSeleccionada(json.semanaActual.semana_numero);
+        // Normalizar campos JSONB que pueden venir como string desde PostgreSQL
+        const semanasNorm: SemanaEstadistica[] = Array.isArray(json.semanasHistoricas)
+          ? json.semanasHistoricas.map(normalizarSemana)
+          : [];
+        setSemanas(semanasNorm);
+
+        // La API puede devolver semanaActual o, si no existe, la primera semana histórica.
+        const actual = json.semanaActual
+          ? normalizarSemana(json.semanaActual)
+          : semanasNorm[0] ?? null;
+
+        setDatos(actual);
+
+        if (actual?.semana_numero) {
+          setSemanaSeleccionada(actual.semana_numero);
         }
+      } else {
+        const txt = await res.text();
+        setErrorMsg(`Error del servidor: ${res.status} — ${txt.slice(0, 200)}`);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Error cargando estadísticas:', e);
+      setErrorMsg('No se pudo conectar al servidor de estadísticas. Revisa tu conexión.');
     } finally {
       setLoading(false);
     }
@@ -138,8 +198,66 @@ export function TheaterStatistics({ isAdmin = false, onAbrirSuscripciones }: The
     }
   };
 
-  if (loading || !datos) {
-    return <div style={{ textAlign: 'center', padding: '3rem' }}><div className="spinner" /></div>;
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '3rem' }}>
+        <div className="spinner" />
+        <p style={{ color: 'rgba(245,230,200,0.7)', marginTop: '1rem' }}>
+          Cargando estadísticas...
+        </p>
+      </div>
+    );
+  }
+
+  if (errorMsg) {
+    return (
+      <div
+        style={{
+          textAlign: 'center',
+          padding: '3rem 1.5rem',
+          border: '1px solid rgba(239,68,68,0.35)',
+          borderRadius: '12px',
+          background: 'rgba(127,29,29,0.12)',
+        }}
+      >
+        <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>⚠️</div>
+        <h3 style={{ color: '#fca5a5', marginBottom: '0.5rem' }}>
+          No se pudieron cargar las estadísticas
+        </h3>
+        <p style={{ color: 'rgba(245,230,200,0.75)', marginBottom: '1rem' }}>
+          {errorMsg}
+        </p>
+        <button
+          type="button"
+          className="btn btn-secundario"
+          onClick={cargarEstadisticas}
+        >
+          🔄 Reintentar
+        </button>
+      </div>
+    );
+  }
+
+  if (!datos) {
+    return (
+      <div
+        style={{
+          textAlign: 'center',
+          padding: '3rem 1.5rem',
+          border: '1px solid rgba(201,162,75,0.25)',
+          borderRadius: '12px',
+          background: '#160a0f',
+        }}
+      >
+        <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>🏛️</div>
+        <h3 style={{ color: '#d4af37', marginBottom: '0.5rem' }}>
+          No hay semanas registradas
+        </h3>
+        <p style={{ color: 'rgba(245,230,200,0.7)' }}>
+          El administrador todavía no ha cargado datos históricos.
+        </p>
+      </div>
+    );
   }
 
   // Máximo para escalar las barras de días

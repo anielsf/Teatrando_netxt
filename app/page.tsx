@@ -11,6 +11,12 @@ export const metadata = {
 export default async function HomePage() {
   const supabase = createSupabaseServerClient();
 
+  // Verificar la sesión en el servidor para no mostrar "Crear Cuenta Gratis"
+  // a usuarios que ya tienen una cuenta iniciada.
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
   // Cargar obras destacadas (SSR para SEO)
   const { data: obras } = await supabase
     .from('carteleras')
@@ -52,9 +58,11 @@ export default async function HomePage() {
               <Link href="/cartelera" className="btn btn-primario" style={{ fontSize: '1rem', padding: '0.8rem 2rem' }}>
                 Ver Cartelera Completa
               </Link>
-              <Link href="/auth" className="btn btn-secundario" style={{ fontSize: '1rem', padding: '0.8rem 2rem' }}>
-                Crear Cuenta Gratis
-              </Link>
+              {!authUser && (
+                <Link href="/auth" className="btn btn-secundario" style={{ fontSize: '1rem', padding: '0.8rem 2rem' }}>
+                  Crear Cuenta Gratis
+                </Link>
+              )}
             </div>
           </div>
         </section>
