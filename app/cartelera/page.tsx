@@ -1,7 +1,5 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { useState } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { Modal } from '@/components/Modal';
@@ -12,11 +10,10 @@ import { useRouter } from 'next/navigation';
 import type { Cartelera } from '@/store/appStore';
 import { useAppStore } from '@/store/appStore';
 
-
 export default function CarteleraPage() {
   const { carteleras, loading, error, filtros, setFiltros } = useCartelera();
   const { formatUSD, formatVES, convertToVES, tasaBCV } = useCurrency();
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { setCarteleraSeleccionada } = useAppStore();
   const [obraDetalle, setObraDetalle] = useState<Cartelera | null>(null);
   const router = useRouter();
@@ -86,14 +83,14 @@ export default function CarteleraPage() {
                     {obra.funcion} · {obra.sala}
                   </p>
                   <p style={{ color: 'var(--color-texto-muted)', fontSize: '0.82rem', marginBottom: '1rem' }}>
-                    📅 {obra.fecha && typeof obra.fecha === 'string' ? obra.fecha.split('T').split('-').reverse().join('/') : (obra.fecha || '')} · ...
+                    📅 {obra.fecha} · ⏰ {obra.hora?.slice(0,5)} · 🎬 {obra.duracion_min} min
                   </p>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <div>
                       <div style={{ color: 'var(--color-primario)', fontWeight: 700, fontSize: '1.1rem' }}>{formatUSD(obra.precio_usd)}</div>
                       <div style={{ color: 'var(--color-texto-muted)', fontSize: '0.78rem' }}>{formatVES(convertToVES(obra.precio_usd))}</div>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <button className="btn btn-secundario" style={{ padding: '0.4rem 0.75rem', fontSize: '0.82rem' }}
                         onClick={() => setObraDetalle(obra)}>
                         Detalle
@@ -102,43 +99,6 @@ export default function CarteleraPage() {
                         onClick={() => handleComprar(obra)}>
                         Comprar
                       </button>
-
-                      {/* BOTONES CONDICIONALES PARA EL ADMINISTRADOR */}
-                      {isAdmin && (
-                        <>
-                          <button 
-                            className="btn" 
-                            style={{ padding: '0.4rem 0.75rem', fontSize: '0.82rem', backgroundColor: '#c9a24b', color: '#fff' }}
-                            onClick={() => {
-                              setCarteleraSeleccionada(obra);
-                              router.push(`/admin/cartelera/editar?id=${obra.id}`);
-                            }}
-                          >
-                            ⚙️ Configurar
-                          </button>
-                          <button 
-                            className="btn" 
-                            style={{ padding: '0.4rem 0.75rem', fontSize: '0.82rem', backgroundColor: '#ff6b8a', color: '#fff' }}
-                            onClick={async () => {
-                              if (confirm(`¿Seguro que deseas eliminar la obra "${obra.obra}"?`)) {
-                                try {
-                                  const response = await fetch(`/api/carteleras?id=${obra.id}`, { method: 'DELETE' });
-                                  if (response.ok) {
-                                    window.location.reload();
-                                  } else {
-                                    alert('Error al intentar eliminar la cartelera');
-                                  }
-                                } catch (err) {
-                                  console.error('Error:', err);
-                                  alert('Ocurrió un fallo en la conexión');
-                                }
-                              }
-                            }}
-                          >
-                            🗑️ Eliminar
-                          </button>
-                        </>
-                      )}
                     </div>
                   </div>
                 </article>
