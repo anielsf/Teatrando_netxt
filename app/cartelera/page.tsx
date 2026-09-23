@@ -85,7 +85,9 @@ export default function CarteleraPage() {
                     {obra.funcion} · {obra.sala}
                   </p>
                   <p style={{ color: 'var(--color-texto-muted)', fontSize: '0.82rem', marginBottom: '1rem' }}>
-                    📅 {obra.fecha ? new Date(obra.fecha).toLocaleDateString('es-ES', { timeZone: 'UTC' }) : ''} · ⏰ {obra.hora?.slice(0,5)} · 🎬 {obra.duracion_min} min
+                    📅 {obra.fecha && typeof obra.fecha === 'string' && obra.fecha.includes('-') 
+    ? obra.fecha.split('T')[0].split('-').reverse().join('/') 
+    : (obra.fecha || '')} · ⏰ {obra.hora?.slice(0,5)} · 🎬 {obra.duracion_min} min
                   </p>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <div>
