@@ -1,4 +1,4 @@
-'use client';
+export const dynamic = 'force-dynamic';
 
 import { useState } from 'react';
 import { Navbar } from '@/components/Navbar';
@@ -13,7 +13,7 @@ import { useAppStore } from '@/store/appStore';
 export default function CarteleraPage() {
   const { carteleras, loading, error, filtros, setFiltros } = useCartelera();
   const { formatUSD, formatVES, convertToVES, tasaBCV } = useCurrency();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, rol } = useAuth();
   const { setCarteleraSeleccionada } = useAppStore();
   const [obraDetalle, setObraDetalle] = useState<Cartelera | null>(null);
   const router = useRouter();
@@ -83,7 +83,7 @@ export default function CarteleraPage() {
                     {obra.funcion} · {obra.sala}
                   </p>
                   <p style={{ color: 'var(--color-texto-muted)', fontSize: '0.82rem', marginBottom: '1rem' }}>
-                    📅 {obra.fecha} · ⏰ {obra.hora?.slice(0,5)} · 🎬 {obra.duracion_min} min
+                    📅 {obra.fecha ? new Date(obra.fecha).toLocaleDateString('es-ES', { timeZone: 'UTC' }) : ''} · ⏰ {obra.hora?.slice(0,5)} · 🎬 {obra.duracion_min} min
                   </p>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <div>
