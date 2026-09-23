@@ -1,7 +1,6 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
-import { ObraCard } from '@/components/ObraCard';
 
 export const metadata = {
   title: 'Inicio — Teatrando',
@@ -96,9 +95,12 @@ export default async function HomePage() {
                 {obras.map((obra) => (
                   <Link key={obra.id} href="/cartelera" className="card" style={{ display: 'block', textDecoration: 'none' }}>
                     {obra.imagen && (
-                      {obras.map((obra) => (
-                        <ObraCard key={obra.id} obra={obra} />
-                      ))}
+                      <img
+                        src={obra.imagen}
+                        alt={obra.obra}
+                        style={{ width: '100%', height: 180, objectFit: 'cover', borderRadius: 'var(--border-radius)', marginBottom: '1rem' }}
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
                     )}
                     <div className="badge badge-usuario" style={{ marginBottom: '0.5rem' }}>{obra.genero || 'Teatro'}</div>
                     <h3 style={{ fontFamily: 'var(--font-familia)', marginBottom: '0.25rem' }}>{obra.obra}</h3>
