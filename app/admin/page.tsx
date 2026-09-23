@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { Navbar } from '@/components/Navbar';
 import { requireAdmin } from '@/lib/auth';
 import { redirect } from 'next/navigation';
@@ -72,4 +73,73 @@ export default async function AdminPage() {
       </main>
     </>
   );
+=======
+import { Navbar } from '@/components/Navbar';
+import { requireAdmin } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { AdminDashboard } from '@/components/AdminDashboard';
+
+export const dynamic = 'force-dynamic';
+
+export default async function AdminPage() {
+  const result = await requireAdmin();
+
+  if (result instanceof Response) {
+    if (result.status === 401) {
+      redirect('/auth?next=/admin');
+    }
+    redirect('/');
+  }
+
+  const { user } = result;
+
+  return (
+    <>
+      <Navbar />
+
+      <main
+        className="contenedor"
+        style={{
+          padding: '2.5rem 1.5rem 4rem',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <p
+              style={{
+                color: 'var(--color-primario)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.12em',
+                fontSize: '0.8rem',
+                marginBottom: '0.25rem',
+              }}
+            >
+              Control Central Teatrando
+            </p>
+            <h1
+              style={{
+                fontFamily: 'var(--font-familia)',
+                color: 'var(--color-primario)',
+                fontSize: '2.2rem',
+                marginBottom: '0.5rem',
+              }}
+            >
+              Panel de Administración
+            </h1>
+            <p
+              style={{
+                color: 'var(--color-texto-suave)',
+                fontSize: '0.95rem',
+              }}
+            >
+              Bienvenido, <strong>{user.nombre}</strong>. Gestión de carteleras teatrales, control de boletería nacional y auditoría de ventas.
+            </p>
+          </div>
+        </div>
+
+        <AdminDashboard user={user} />
+      </main>
+    </>
+  );
+>>>>>>> ce05389 (se agrego la configuracion de area de administrador, critico, se ajustaron los roles, se actualizaron los flujos y se agrego opción de recuperación de clave)
 }

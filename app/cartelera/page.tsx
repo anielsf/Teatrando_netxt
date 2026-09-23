@@ -5,6 +5,10 @@ export const dynamic = 'force-dynamic';
 import { useState } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { Modal } from '@/components/Modal';
+<<<<<<< HEAD
+=======
+import { CriticReviewSection } from '@/components/CriticReviewSection';
+>>>>>>> ce05389 (se agrego la configuracion de area de administrador, critico, se ajustaron los roles, se actualizaron los flujos y se agrego opción de recuperación de clave)
 import { useCartelera } from '@/hooks/useCartelera';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useAuth } from '@/hooks/useAuth';
@@ -130,11 +134,29 @@ export default function CarteleraPage() {
                 <strong style={{ color: 'var(--color-primario)' }}>Reparto:</strong> {obraDetalle.reparto}
               </p>
             )}
+<<<<<<< HEAD
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
               <button className="btn btn-primario" onClick={() => { setObraDetalle(null); handleComprar(obraDetalle); }}>
                 🎟️ Comprar Entrada
               </button>
             </div>
+=======
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', marginBottom: '1.5rem' }}>
+              <div>
+                <span style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-primario)' }}>{formatUSD(obraDetalle.precio_usd)}</span>
+                <span style={{ fontSize: '0.85rem', color: 'var(--color-texto-muted)', marginLeft: '0.5rem' }}>
+                  ({formatVES(convertToVES(obraDetalle.precio_usd))})
+                </span>
+              </div>
+              <button className="btn btn-primario" onClick={() => { const o = obraDetalle; setObraDetalle(null); handleComprar(o); }}>
+                🎟️ Comprar Entrada
+              </button>
+            </div>
+
+            {/* Críticas y puntuaciones de 1 a 5 estrellas para el crítico */}
+            <CriticReviewSection idObra={obraDetalle.id} obraTitulo={obraDetalle.obra} />
+>>>>>>> ce05389 (se agrego la configuracion de area de administrador, critico, se ajustaron los roles, se actualizaron los flujos y se agrego opción de recuperación de clave)
           </div>
         )}
       </Modal>

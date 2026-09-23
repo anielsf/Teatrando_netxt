@@ -122,7 +122,11 @@ async function DELETE(req: Request) {
     return Response.json({ error: 'ID de cartelera requerido.' }, { status: 400 });
   }
 
+<<<<<<< HEAD
   await query('DELETE FROM public.carteleras WHERE id=\$1', [id]);
+=======
+  await query('DELETE FROM public.carteleras WHERE id=$1', [id]);
+>>>>>>> ce05389 (se agrego la configuracion de area de administrador, critico, se ajustaron los roles, se actualizaron los flujos y se agrego opción de recuperación de clave)
   logger.info('Cartelera eliminada', { id });
   return Response.json({ success: true });
 }

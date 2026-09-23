@@ -22,6 +22,11 @@ export interface UseAuthReturn {
   login: (email: string, password: string) => Promise<{ success: boolean; user?: User; error?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   register: (nombre: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+<<<<<<< HEAD
+=======
+  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
+  updatePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
+>>>>>>> ce05389 (se agrego la configuracion de area de administrador, critico, se ajustaron los roles, se actualizaron los flujos y se agrego opción de recuperación de clave)
   logout: () => Promise<void>;
 }
 
@@ -105,6 +110,23 @@ export function useAuth(): UseAuthReturn {
     return { success: true };
   }, []);
 
+<<<<<<< HEAD
+=======
+  const resetPassword = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.toLowerCase().trim(), {
+      redirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}/auth/reset-password`,
+    });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  }, [supabase]);
+
+  const updatePassword = useCallback(async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  }, [supabase]);
+
+>>>>>>> ce05389 (se agrego la configuracion de area de administrador, critico, se ajustaron los roles, se actualizaron los flujos y se agrego opción de recuperación de clave)
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -128,6 +150,11 @@ export function useAuth(): UseAuthReturn {
     login,
     loginWithGoogle,
     register,
+<<<<<<< HEAD
+=======
+    resetPassword,
+    updatePassword,
+>>>>>>> ce05389 (se agrego la configuracion de area de administrador, critico, se ajustaron los roles, se actualizaron los flujos y se agrego opción de recuperación de clave)
     logout,
   };
 }
