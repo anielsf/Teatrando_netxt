@@ -7,8 +7,8 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { withErrorHandler, logger } from '@/lib/logger';
 import { getAuthUser } from '@/lib/auth';
 
-// GET: Obtener el usuario y perfil actual
-async function GET() {
+// Función interna para obtener el usuario y perfil actual
+async function handleGET() {
   const user = await getAuthUser();
   if (!user) {
     return Response.json({ authenticated: false }, { status: 200 });
@@ -16,8 +16,8 @@ async function GET() {
   return Response.json({ authenticated: true, usuario: user });
 }
 
-// POST: Registrar nuevo usuario (complementa el signUp de Supabase)
-async function POST(req: Request) {
+// Función interna para registrar nuevo usuario (complementa el signUp de Supabase)
+async function handlePOST(req: Request) {
   const body = await req.json();
   const { action, email, password, nombre } = body;
 
@@ -58,6 +58,6 @@ async function POST(req: Request) {
   return Response.json({ error: 'Acción no reconocida' }, { status: 400 });
 }
 
-export const GET_HANDLER = withErrorHandler(GET);
-export const POST_HANDLER = withErrorHandler(POST);
-export { GET_HANDLER as GET, POST_HANDLER as POST };
+// Exportaciones formales que Next.js leerá para los métodos HTTP
+export const GET = withErrorHandler(handleGET);
+export const POST = withErrorHandler(handlePOST);
