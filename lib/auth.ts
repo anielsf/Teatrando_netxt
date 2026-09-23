@@ -22,26 +22,72 @@ export interface AuthUser {
 export async function getAuthUser(): Promise<AuthUser | null> {
   try {
     const supabase = createSupabaseServerClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
 
-    if (error || !user) return null;
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
-    // Obtener el perfil con rol desde la tabla profiles
-    const { data: profile } = await supabase
+    if (error || !user) {
+      return null;
+    }
+
+    const {
+      data: profile,
+      error: profileError,
+    } = await supabase
       .from('profiles')
-      .select('nombre, rol, plan_suscripcion')
+      .select(
+        'nombre, rol, plan_suscripcion'
+      )
       .eq('id', user.id)
       .single();
 
+    if (
+      profileError ||
+      !profile
+    ) {
+      logger.warn(
+        'Perfil no encontrado para usuario autenticado',
+        {
+          userId: user.id,
+          error: profileError?.message,
+        }
+      );
+
+      return null;
+    }
+
     return {
       id: user.id,
-      email: user.email || '',
-      rol: (profile?.rol as UserRole) || 'Usuario',
-      plan: profile?.plan_suscripcion || 'Plan Básico (Gratis)',
-      nombre: profile?.nombre || user.email?.split('@')[0] || 'Usuario',
+
+      email:
+        user.email || '',
+
+      rol:
+        (profile.rol as UserRole) ||
+        'Usuario',
+
+      plan:
+        profile.plan_suscripcion ||
+        'Plan Básico (Gratis)',
+
+      nombre:
+        profile.nombre ||
+        user.email?.split('@')[0] ||
+        'Usuario',
     };
+
   } catch (err) {
-    logger.error('Error en getAuthUser', { message: (err as Error).message });
+
+    logger.error(
+      'Error en getAuthUser',
+      {
+        message:
+          (err as Error).message,
+      }
+    );
+
     return null;
   }
 }

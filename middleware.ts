@@ -1,20 +1,12 @@
 /**
  * middleware.ts — Teatrando
  *
- * Ejecuta en el Edge de Vercel antes de cada request.
- *
  * Responsabilidades:
- *   1. Rate Limiting (Upstash Redis) — protege toda la API
- *   2. Refresh de sesión de Supabase Auth
- *   3. Protección de rutas autenticadas
- *   4. Protección de /admin mediante profiles.rol
  *
- * IMPORTANTE:
- * El rol NO se obtiene desde:
- *   session.user.user_metadata.rol
- *
- * La fuente de verdad de roles en Teatrando es:
- *   public.profiles.rol
+ * 1. Rate Limiting de API mediante Upstash
+ * 2. Refresh de sesión de Supabase
+ * 3. Protección de rutas autenticadas
+ * 4. Consulta del rol desde public.profiles
  */
 
 import {
@@ -31,18 +23,23 @@ import {
 // ============================================================
 // RUTAS PROTEGIDAS
 // ============================================================
-//
-// Estas rutas requieren una sesión de Supabase.
-//
-// La autorización específica de Admin se comprueba
-// posteriormente consultando public.profiles.
-//
-// ============================================================
 
 const PROTECTED_ROUTES: Record<string, string[]> = {
-  '/cuenta': ['Usuario', 'Crítico', 'Admin'],
-  '/checkout': ['Usuario', 'Crítico', 'Admin'],
-  '/admin': ['Admin'],
+  '/cuenta': [
+    'Usuario',
+    'Crítico',
+    'Admin',
+  ],
+
+  '/checkout': [
+    'Usuario',
+    'Crítico',
+    'Admin',
+  ],
+
+  '/admin': [
+    'Admin',
+  ],
 };
 
 
@@ -50,11 +47,9 @@ const PROTECTED_ROUTES: Record<string, string[]> = {
 // MIDDLEWARE
 // ============================================================
 
-export async function middleware(req: NextRequest) {
-
-  // ----------------------------------------------------------
-  // Respuesta inicial
-  // ----------------------------------------------------------
+export async function middleware(
+  req: NextRequest
+) {
 
   let response = NextResponse.next({
     request: {
@@ -64,7 +59,7 @@ export async function middleware(req: NextRequest) {
 
 
   // ==========================================================
-  // 1. RATE LIMITING — UPSTASH
+  // 1. RATE LIMITING
   // ==========================================================
 
   const upstashUrl =
@@ -90,37 +85,39 @@ export async function middleware(req: NextRequest) {
         await import('@upstash/redis');
 
 
-      const ratelimit = new Ratelimit({
+      const ratelimit =
+        new Ratelimit({
 
-        redis: new Redis({
-          url: upstashUrl,
-          token: upstashToken,
-        }),
+          redis: new Redis({
+            url: upstashUrl,
+            token: upstashToken,
+          }),
 
-        limiter: Ratelimit.slidingWindow(
-          30,
-          '1 m'
-        ),
+          limiter:
+            Ratelimit.slidingWindow(
+              30,
+              '1 m'
+            ),
 
-        analytics: false,
-      });
+          analytics: false,
+        });
 
 
       const ip =
         req.ip ??
-        req.headers.get('x-forwarded-for') ??
+        req.headers.get(
+          'x-forwarded-for'
+        ) ??
         '127.0.0.1';
-
-
-      const identifier =
-        `teatrando:${ip}`;
 
 
       const {
         success,
         limit,
         remaining,
-      } = await ratelimit.limit(identifier);
+      } = await ratelimit.limit(
+        `teatrando:${ip}`
+      );
 
 
       if (!success) {
@@ -150,19 +147,19 @@ export async function middleware(req: NextRequest) {
 
     } catch (error) {
 
-      // Fail-open:
-      // Si Upstash falla, no bloqueamos la aplicación.
-
       console.error(
-        '[Middleware] Error en Upstash:',
+        '[Middleware] Error Upstash:',
         error
       );
+
+      // Fail-open:
+      // si Upstash falla no bloqueamos la aplicación.
     }
   }
 
 
   // ==========================================================
-  // 2. SUPABASE — REFRESH DE SESIÓN
+  // 2. SUPABASE
   // ==========================================================
 
   const supabaseUrl =
@@ -172,105 +169,80 @@ export async function middleware(req: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 
-  // Si faltan las variables, no intentamos crear
-  // un cliente inválido de Supabase.
-
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (
+    !supabaseUrl ||
+    !supabaseAnonKey
+  ) {
 
     console.error(
-      '[Middleware] Faltan las variables ' +
-      'NEXT_PUBLIC_SUPABASE_URL o ' +
-      'NEXT_PUBLIC_SUPABASE_ANON_KEY.'
+      '[Middleware] Faltan variables de Supabase.'
     );
 
     return response;
   }
 
 
-  const supabase = createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      cookies: {
+  const supabase =
+    createServerClient(
+      supabaseUrl,
+      supabaseAnonKey,
+      {
+        cookies: {
 
-        get(name: string) {
+          get(name: string) {
+            return req.cookies.get(name)?.value;
+          },
 
-          return req.cookies.get(name)?.value;
-        },
+          set(
+            name: string,
+            value: string,
+            options: CookieOptions
+          ) {
 
-
-        set(
-          name: string,
-          value: string,
-          options: CookieOptions
-        ) {
-
-          req.cookies.set({
-            name,
-            value,
-            ...options,
-          } as any);
-
-
-          response =
-            NextResponse.next({
-              request: {
-                headers: req.headers,
-              },
-            });
-
-
-          response.cookies.set(
-            {
+            req.cookies.set({
               name,
               value,
               ...options,
-            }
-          );
-        },
+            } as any);
 
-
-        remove(
-          name: string,
-          options: CookieOptions
-        ) {
-
-          req.cookies.set({
-            name,
-            value: '',
-            ...options,
-          } as any);
-
-
-          response =
-            NextResponse.next({
-              request: {
-                headers: req.headers,
-              },
+            response.cookies.set({
+              name,
+              value,
+              ...options,
             });
+          },
 
+          remove(
+            name: string,
+            options: CookieOptions
+          ) {
 
-          response.cookies.set(
-            {
+            req.cookies.set({
               name,
               value: '',
               ...options,
-            }
-          );
+            } as any);
+
+            response.cookies.set({
+              name,
+              value: '',
+              ...options,
+            });
+          },
         },
-      },
-    }
-  );
+      }
+    );
 
 
   // ==========================================================
-  // 3. OBTENER USUARIO AUTENTICADO
+  // 3. OBTENER USUARIO
   // ==========================================================
   //
-  // getUser() es preferible a confiar únicamente en
-  // getSession() para autorización.
+  // getUser() valida el usuario contra Supabase.
   //
-  // Supabase valida el JWT y devuelve el usuario autenticado.
+  // No utilizamos:
+  //
+  // user_metadata.rol
   //
   // ==========================================================
 
@@ -282,21 +254,19 @@ export async function middleware(req: NextRequest) {
   } = await supabase.auth.getUser();
 
 
+  // ==========================================================
+  // 4. IDENTIFICAR RUTA
+  // ==========================================================
+
   const pathname =
     req.nextUrl.pathname;
 
 
-  // ==========================================================
-  // 4. DETERMINAR SI LA RUTA ESTÁ PROTEGIDA
-  // ==========================================================
-
   let matchedRoute:
-    | string
-    | null = null;
+    string | null = null;
 
   let allowedRoles:
-    | string[]
-    | null = null;
+    string[] | null = null;
 
 
   for (
@@ -304,10 +274,14 @@ export async function middleware(req: NextRequest) {
     of Object.entries(PROTECTED_ROUTES)
   ) {
 
-    if (
+    const matches =
       pathname === route ||
-      pathname.startsWith(`${route}/`)
-    ) {
+      pathname.startsWith(
+        `${route}/`
+      );
+
+
+    if (matches) {
 
       matchedRoute = route;
       allowedRoles = roles;
@@ -317,17 +291,19 @@ export async function middleware(req: NextRequest) {
   }
 
 
-  // Si la ruta no está protegida,
-  // dejamos continuar.
+  // Ruta pública
 
-  if (!matchedRoute || !allowedRoles) {
+  if (
+    !matchedRoute ||
+    !allowedRoles
+  ) {
 
     return response;
   }
 
 
   // ==========================================================
-  // 5. USUARIO NO AUTENTICADO
+  // 5. SESIÓN REQUERIDA
   // ==========================================================
 
   if (
@@ -336,7 +312,10 @@ export async function middleware(req: NextRequest) {
   ) {
 
     const loginUrl =
-      new URL('/auth', req.url);
+      new URL(
+        '/auth',
+        req.url
+      );
 
 
     loginUrl.searchParams.set(
@@ -352,24 +331,7 @@ export async function middleware(req: NextRequest) {
 
 
   // ==========================================================
-  // 6. OBTENER ROL DESDE public.profiles
-  // ==========================================================
-  //
-  // ESTE ES EL CAMBIO IMPORTANTE.
-  //
-  // Antes:
-  //
-  // session.user.user_metadata?.rol
-  //
-  // Ahora:
-  //
-  // profiles.rol
-  //
-  // Esto coincide con:
-  //
-  // lib/auth.ts
-  // hooks/useAuth.ts
-  //
+  // 6. OBTENER ROL DESDE profiles
   // ==========================================================
 
   const {
@@ -383,7 +345,7 @@ export async function middleware(req: NextRequest) {
 
 
   // ==========================================================
-  // 7. ERROR AL OBTENER EL PERFIL
+  // 7. ERROR CONSULTANDO PROFILE
   // ==========================================================
 
   if (profileError) {
@@ -393,9 +355,6 @@ export async function middleware(req: NextRequest) {
       profileError.message
     );
 
-
-    // No damos acceso a una ruta protegida
-    // si no podemos determinar el rol.
 
     return NextResponse.redirect(
       new URL('/', req.url)
@@ -410,7 +369,7 @@ export async function middleware(req: NextRequest) {
   if (!profile) {
 
     console.warn(
-      '[Middleware] Usuario sin perfil:',
+      '[Middleware] Perfil no encontrado:',
       user.id
     );
 
@@ -422,20 +381,23 @@ export async function middleware(req: NextRequest) {
 
 
   // ==========================================================
-  // 9. NORMALIZAR ROL
+  // 9. ROL
   // ==========================================================
 
   const userRole =
-    String(profile.rol || 'Usuario')
-      .trim();
+    String(
+      profile.rol || 'Usuario'
+    ).trim();
 
 
   // ==========================================================
-  // 10. COMPROBAR AUTORIZACIÓN
+  // 10. AUTORIZACIÓN
   // ==========================================================
 
   if (
-    !allowedRoles.includes(userRole)
+    !allowedRoles.includes(
+      userRole
+    )
   ) {
 
     console.warn(
@@ -456,7 +418,7 @@ export async function middleware(req: NextRequest) {
 
 
   // ==========================================================
-  // 11. TODO CORRECTO
+  // 11. AUTORIZADO
   // ==========================================================
 
   return response;
@@ -464,22 +426,12 @@ export async function middleware(req: NextRequest) {
 
 
 // ============================================================
-// CONFIGURACIÓN DEL MIDDLEWARE
+// CONFIGURACIÓN
 // ============================================================
 
 export const config = {
 
   matcher: [
-
-    /*
-     * Aplicar a todas las rutas excepto:
-     *
-     * - _next/static
-     * - _next/image
-     * - favicon.ico
-     * - imágenes estáticas
-     */
-
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
