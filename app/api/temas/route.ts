@@ -10,7 +10,7 @@ import { withErrorHandler, logger } from '@/lib/logger';
 
 async function GET() {
   const rows = await query(`
-    SELECT * FROM temas_estacionales WHERE activo = true LIMIT 1
+    SELECT * FROM public.temas_estacionales WHERE activo = true LIMIT 1
   `);
   const tema = rows[0] || {
     color_primario: '#c9a24b',
@@ -31,13 +31,13 @@ async function POST(req: Request) {
 
   const body = await req.json();
 
-  // Desactivar todos los temas primero
+  // Desactivar todos los temas primero en el esquema public
   if (body.activo) {
-    await query('UPDATE temas_estacionales SET activo = false');
+    await query('UPDATE public.temas_estacionales SET activo = false');
   }
 
   const rows = await query(
-    `INSERT INTO temas_estacionales
+    `INSERT INTO public.temas_estacionales
       (nombre, descripcion, activo, fecha_inicio, fecha_fin,
        color_primario, color_secundario, color_acento, color_fondo,
        color_texto, color_texto_suave, border_radius, hero_image_url,
@@ -69,11 +69,11 @@ async function PUT(req: Request) {
   if (!id) return Response.json({ error: 'ID del tema requerido.' }, { status: 400 });
 
   if (body.activo) {
-    await query('UPDATE temas_estacionales SET activo = false WHERE id != $1', [id]);
+    await query('UPDATE public.temas_estacionales SET activo = false WHERE id != \$1', [id]);
   }
 
   await query(
-    `UPDATE temas_estacionales SET
+    `UPDATE public.temas_estacionales SET
        nombre=$1, descripcion=$2, activo=$3, fecha_inicio=$4, fecha_fin=$5,
        color_primario=$6, color_secundario=$7, color_acento=$8, color_fondo=$9,
        color_texto=$10, color_texto_suave=$11, border_radius=$12,

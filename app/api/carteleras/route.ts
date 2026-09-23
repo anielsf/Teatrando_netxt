@@ -46,11 +46,11 @@ async function GET(req: Request) {
         )) FILTER (WHERE cm.id IS NOT NULL AND cm.tipo = 'comentario'), '[]'
       ) AS comentarios,
       COUNT(DISTINCT lk.id) FILTER (WHERE lk.tipo = 'like') AS likes
-    FROM carteleras c
-    LEFT JOIN teatros t ON c.id_teatro = t.id
-    LEFT JOIN interacciones i  ON i.id_obra = c.id
-    LEFT JOIN interacciones cm ON cm.id_obra = c.id
-    LEFT JOIN interacciones lk ON lk.id_obra = c.id
+    FROM public.carteleras c
+    LEFT JOIN public.teatros t ON c.id_teatro = t.id
+    LEFT JOIN public.interacciones i  ON i.id_obra = c.id
+    LEFT JOIN public.interacciones cm ON cm.id_obra = c.id
+    LEFT JOIN public.interacciones lk ON lk.id_obra = c.id
     ${visibleFilter}
     GROUP BY c.id, t.nombre, t.ubicacion, t.aforo
     ORDER BY c.fecha ASC, c.hora ASC
@@ -75,9 +75,9 @@ async function POST(req: Request) {
   }
 
   if (id) {
-    // Actualizar cartelera existente
+    // Actualizar cartelera existente en el esquema public
     await query(
-      `UPDATE carteleras SET
+      `UPDATE public.carteleras SET
         id_teatro=$1, obra=$2, funcion=$3, genero=$4, sala=$5, director=$6,
         fecha=$7, hora=$8, precio_usd=$9, sinopsis=$10, reparto=$11, imagen=$12,
         duracion_min=$13, edad_minima=$14, visible=$15
@@ -92,10 +92,10 @@ async function POST(req: Request) {
     logger.info('Cartelera actualizada', { id, obra });
     return Response.json({ success: true, id });
   } else {
-    // Crear nueva cartelera
+    // Crear nueva cartelera en el esquema public
     const newId = `TRD-${Date.now()}`;
     await query(
-      `INSERT INTO carteleras
+      `INSERT INTO public.carteleras
         (id, id_teatro, obra, funcion, genero, sala, director, fecha, hora,
          precio_usd, sinopsis, reparto, imagen, duracion_min, edad_minima, visible)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
@@ -122,7 +122,7 @@ async function DELETE(req: Request) {
     return Response.json({ error: 'ID de cartelera requerido.' }, { status: 400 });
   }
 
-  await query('DELETE FROM carteleras WHERE id=$1', [id]);
+  await query('DELETE FROM public.carteleras WHERE id=\$1', [id]);
   logger.info('Cartelera eliminada', { id });
   return Response.json({ success: true });
 }
