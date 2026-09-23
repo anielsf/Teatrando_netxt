@@ -8,9 +8,24 @@
 import { useEffect, useState, useCallback } from 'react';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useAppStore, type TeatrandoUser } from '@/store/appStore';
-import type { Session } from '@supabase/supabase-js';
+import type { Session, User } from '@supabase/supabase-js';
 
-export function useAuth() {
+export interface UseAuthReturn {
+  user: TeatrandoUser | null;
+  session: Session | null;
+  loading: boolean;
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+  isCritic: boolean;
+  hasFreeFees: boolean;
+  rol: string | null;
+  login: (email: string, password: string) => Promise<{ success: boolean; user?: User; error?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  register: (nombre: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
+}
+
+export function useAuth(): UseAuthReturn {
   const { user, setUser } = useAppStore();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -109,6 +124,7 @@ export function useAuth() {
     isAdmin,
     isCritic,
     hasFreeFees,
+    rol: user?.rol || null,
     login,
     loginWithGoogle,
     register,

@@ -1,3 +1,5 @@
+"use client";
+
 export const dynamic = 'force-dynamic';
 
 import { useState } from 'react';
@@ -13,7 +15,7 @@ import { useAppStore } from '@/store/appStore';
 export default function CarteleraPage() {
   const { carteleras, loading, error, filtros, setFiltros } = useCartelera();
   const { formatUSD, formatVES, convertToVES, tasaBCV } = useCurrency();
-  const { isAuthenticated, rol } = useAuth();
+  const { isAuthenticated, isAdmin, isCritic, user } = useAuth();
   const { setCarteleraSeleccionada } = useAppStore();
   const [obraDetalle, setObraDetalle] = useState<Cartelera | null>(null);
   const router = useRouter();
