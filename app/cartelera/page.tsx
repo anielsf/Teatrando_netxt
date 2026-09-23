@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import type { Cartelera } from '@/store/appStore';
 import { useAppStore } from '@/store/appStore';
 
+
 export default function CarteleraPage() {
   const { carteleras, loading, error, filtros, setFiltros } = useCartelera();
   const { formatUSD, formatVES, convertToVES, tasaBCV } = useCurrency();
