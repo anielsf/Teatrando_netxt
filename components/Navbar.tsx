@@ -1,3 +1,7 @@
+/**
+ * Componente: Navbar
+ * Barra de navegación principal con control dinámico de rutas según roles
+ */
 'use client';
 
 import Link from 'next/link';
@@ -10,9 +14,9 @@ export function Navbar() {
   const pathname = usePathname();
 
   const navLinks = [
-    { href: '/',           label: 'Inicio',     show: true },
-    { href: '/cartelera',  label: 'Cartelera',  show: true },
-    { href: '/cuenta',     label: 'Mi Cuenta',  show: isAuthenticated },
+    { href: '/',         label: 'Inicio',      show: true },
+    { href: '/cartelera',  label: 'Cartelera',   show: true },
+    { href: '/cuenta',     label: 'Mi Cuenta',   show: isAuthenticated },
     { href: '/admin',      label: 'Administrar', show: isAdmin },
   ];
 
