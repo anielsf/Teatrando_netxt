@@ -1,25 +1,31 @@
-/**
- * API Route: /auth/callback
- * Intercambia el code de OAuth (Google SSO) por una sesión de Supabase
- */
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
-  const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get('code');
-  const next = requestUrl.searchParams.get('next') || '/';
+  const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get('code');
+  const next = searchParams.get('next') ?? '/';
 
   if (code) {
     const supabase = createSupabaseServerClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
+
     if (!error) {
-      return NextResponse.redirect(new URL(next, requestUrl.origin));
+      const forwardedHost = request.headers.get('x-forwarded-host');
+      const isLocalEnv = process.env.NODE_ENV === 'development';
+
+      if (isLocalEnv) {
+        return NextResponse.redirect(`${origin}${next}`);
+      } else if (forwardedHost) {
+        return NextResponse.redirect(`https://${forwardedHost}${next}`);
+      } else {
+        return NextResponse.redirect(`${origin}${next}`);
+      }
     }
+
+    // Exporta el error exacto del backend hacia la UI para depuración
+    return NextResponse.redirect(`${origin}/auth?error=${encodeURIComponent(error.message)}`);
   }
 
-  // Si falla el intercambio, redirigir a login con error
-  return NextResponse.redirect(
-    new URL('/auth?error=oauth_callback_failed', requestUrl.origin)
-  );
+  return NextResponse.redirect(`${origin}/auth?error=no_code_provided`);
 }
