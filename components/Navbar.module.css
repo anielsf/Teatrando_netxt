@@ -1,0 +1,96 @@
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(13, 5, 7, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--color-borde);
+  padding: 0.75rem 0;
+}
+
+.contenedor {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.logo {
+  font-family: var(--font-familia);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--color-primario);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.logo span { color: var(--color-texto); }
+.logo:hover { color: var(--color-primario); }
+
+.navLinks {
+  display: flex;
+  list-style: none;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.navLink {
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--border-radius);
+  color: var(--color-texto-suave);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all var(--transicion);
+  text-decoration: none;
+}
+
+.navLink:hover {
+  color: var(--color-texto);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.navLink.activo {
+  color: var(--color-primario);
+  background: rgba(201, 162, 75, 0.1);
+}
+
+.userArea {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.userBadge {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 100px;
+  background: rgba(201, 162, 75, 0.15);
+  color: var(--color-primario);
+  border: 1px solid rgba(201, 162, 75, 0.3);
+  white-space: nowrap;
+}
+
+.userName {
+  font-size: 0.85rem;
+  color: var(--color-texto-suave);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btnLogout {
+  font-size: 0.82rem;
+  padding: 0.4rem 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .navLinks { display: none; }
+  .userName { display: none; }
+}

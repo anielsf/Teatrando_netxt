@@ -1,0 +1,121 @@
+.main {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: radial-gradient(ellipse at center, #1a0a0d 0%, var(--color-fondo) 70%);
+}
+
+.card {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--border-radius-xl);
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), var(--sombra-glow);
+}
+
+.header { text-align: center; margin-bottom: 2rem; }
+
+.titulo {
+  font-family: var(--font-familia);
+  font-size: 2rem;
+  color: var(--color-primario);
+  margin-bottom: 0.25rem;
+}
+
+.slogan {
+  color: var(--color-texto-suave);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+.tabs {
+  display: flex;
+  background: rgba(255,255,255,0.03);
+  border-radius: var(--border-radius);
+  padding: 4px;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--color-borde);
+}
+
+.tab {
+  flex: 1;
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  border-radius: calc(var(--border-radius) - 2px);
+  color: var(--color-texto-muted);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transicion);
+}
+
+.tabActivo {
+  background: var(--color-primario);
+  color: var(--color-fondo);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.error {
+  background: rgba(139, 26, 46, 0.2);
+  border: 1px solid rgba(139, 26, 46, 0.4);
+  color: #ff8099;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--border-radius);
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.success {
+  background: rgba(52, 168, 83, 0.15);
+  border: 1px solid rgba(52, 168, 83, 0.3);
+  color: #7ccc8e;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--border-radius);
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.separador {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.25rem 0;
+}
+
+.separador::before, .separador::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-borde);
+}
+
+.separadorTexto {
+  color: var(--color-texto-muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.btnGoogle {
+  width: 100%;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--color-borde);
+  color: var(--color-texto);
+  justify-content: center;
+}
+
+.btnGoogle:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.2);
+  color: var(--color-texto);
+  transform: translateY(-1px);
+}
