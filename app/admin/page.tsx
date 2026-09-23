@@ -15,8 +15,13 @@ export default function AdminPage() {
     }
   }, [isAdmin, loading, router]);
 
-  if (loading) return <p style={{ textAlign: 'center', padding: '4rem' }}>Cargando panel...</p>;
-  if (!isAdmin) return null;
+  if (loading) {
+    return <p style={{ textAlign: 'center', padding: '4rem', color: 'var(--color-texto-suave)' }}>Cargando panel...</p>;
+  }
+
+  if (!isAdmin) {
+    return null;
+  }
 
   return (
     <>
@@ -26,7 +31,7 @@ export default function AdminPage() {
           Panel de Administración
         </h1>
         <p style={{ color: 'var(--color-texto-suave)' }}>
-          Bienvenido, {user?.nombre}. Aquí puedes gestionar las carteleras, teatros y usuarios del sistema.
+          Bienvenido, {user?.nombre}. Gestión autorizada para carteleras, teatros y configuraciones del sistema.
         </p>
       </main>
     </>
