@@ -5,7 +5,7 @@
 import { createSupabaseServerClient } from './supabase/server';
 import { logger } from './logger';
 
-export type UserRole = 'Visitante' | 'Usuario' | 'Crítico' | 'Admin';
+export type UserRole = 'Visitante' | 'Usuario' | 'Crítico' | 'Admin' | 'Grupo th';
 
 export interface AuthUser {
   id: string;
@@ -97,7 +97,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
  * Retorna Response 401/403 si no cumple, null si está autorizado.
  */
 export async function requireAuth(
-  allowedRoles: UserRole[] = ['Usuario', 'Crítico', 'Admin']
+  allowedRoles: UserRole[] = ['Usuario', 'Crítico', 'Admin', 'Grupo th']
 ): Promise<{ user: AuthUser } | Response> {
   const user = await getAuthUser();
 
@@ -128,6 +128,13 @@ export async function requireAuth(
  */
 export function requireAdmin() {
   return requireAuth(['Admin']);
+}
+
+/**
+ * Shortcut: Admin o Grupo TH
+ */
+export function requireAdminOrGrupoTH() {
+  return requireAuth(['Admin', 'Grupo th']);
 }
 
 /**

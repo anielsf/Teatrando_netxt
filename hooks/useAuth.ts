@@ -1,7 +1,7 @@
 /**
  * Hook: useAuth
  * Encapsula la lógica de autenticación de Supabase
- * y los helpers de roles del sistema
+ * y los helpers de roles del sistema (Admin, Grupo th, Crítico, Usuario)
  */
 'use client';
 
@@ -17,16 +17,15 @@ export interface UseAuthReturn {
   isAuthenticated: boolean;
   isAdmin: boolean;
   isCritic: boolean;
+  isGrupoTH: boolean;
+  canManageCarteleras: boolean;
   hasFreeFees: boolean;
   rol: string | null;
   login: (email: string, password: string) => Promise<{ success: boolean; user?: User; error?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   register: (nombre: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-<<<<<<< HEAD
-=======
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   updatePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
->>>>>>> ce05389 (se agrego la configuracion de area de administrador, critico, se ajustaron los roles, se actualizaron los flujos y se agrego opción de recuperación de clave)
   logout: () => Promise<void>;
 }
 
@@ -35,6 +34,25 @@ export function useAuth(): UseAuthReturn {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = getSupabaseBrowserClient();
+
+  const syncUserProfile = useCallback(async (userId: string) => {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (profile) {
+      setUser({
+        id: userId,
+        email: profile.email,
+        nombre: profile.nombre || '',
+        rol: profile.rol || 'Usuario',
+        plan: profile.plan_suscripcion || 'Plan Básico (Gratis)',
+        avatar_url: profile.avatar_url,
+      });
+    }
+  }, [supabase, setUser]);
 
   useEffect(() => {
     // Obtener sesión inicial
@@ -59,27 +77,7 @@ export function useAuth(): UseAuthReturn {
     );
 
     return () => subscription.unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const syncUserProfile = useCallback(async (userId: string) => {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (profile) {
-      setUser({
-        id: userId,
-        email: profile.email,
-        nombre: profile.nombre || '',
-        rol: profile.rol || 'Usuario',
-        plan: profile.plan_suscripcion || 'Plan Básico (Gratis)',
-        avatar_url: profile.avatar_url,
-      });
-    }
-  }, [supabase, setUser]);
+  }, [supabase, syncUserProfile, setUser]);
 
   const login = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -110,8 +108,6 @@ export function useAuth(): UseAuthReturn {
     return { success: true };
   }, []);
 
-<<<<<<< HEAD
-=======
   const resetPassword = useCallback(async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email.toLowerCase().trim(), {
       redirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}/auth/reset-password`,
@@ -126,7 +122,6 @@ export function useAuth(): UseAuthReturn {
     return { success: true };
   }, [supabase]);
 
->>>>>>> ce05389 (se agrego la configuracion de area de administrador, critico, se ajustaron los roles, se actualizaron los flujos y se agrego opción de recuperación de clave)
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -134,8 +129,10 @@ export function useAuth(): UseAuthReturn {
 
   // Helpers de rol
   const isAuthenticated = !!session;
-  const isAdmin    = user?.rol === 'Admin';
-  const isCritic   = user?.rol === 'Crítico' || user?.rol === 'Admin';
+  const isAdmin = user?.rol === 'Admin';
+  const isCritic = user?.rol === 'Crítico' || user?.rol === 'Admin';
+  const isGrupoTH = user?.rol === 'Grupo th';
+  const canManageCarteleras = isAdmin || isGrupoTH;
   const hasFreeFees = user?.plan === 'Plan Bambalinas' || user?.plan === 'Plan Crítico / VIP';
 
   return {
@@ -145,16 +142,15 @@ export function useAuth(): UseAuthReturn {
     isAuthenticated,
     isAdmin,
     isCritic,
+    isGrupoTH,
+    canManageCarteleras,
     hasFreeFees,
     rol: user?.rol || null,
     login,
     loginWithGoogle,
     register,
-<<<<<<< HEAD
-=======
     resetPassword,
     updatePassword,
->>>>>>> ce05389 (se agrego la configuracion de area de administrador, critico, se ajustaron los roles, se actualizaron los flujos y se agrego opción de recuperación de clave)
     logout,
   };
 }

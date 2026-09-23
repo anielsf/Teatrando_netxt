@@ -6,28 +6,16 @@ import { useAuth } from '@/hooks/useAuth';
 import styles from './page.module.css';
 
 export default function AuthPage() {
-<<<<<<< HEAD
-  const [tab, setTab] = useState<'login' | 'register'>('login');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [mensaje, setMensaje] = useState('');
-  const { login, loginWithGoogle, register } = useAuth();
-=======
   const [tab, setTab] = useState<'login' | 'register' | 'reset'>('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [mensaje, setMensaje] = useState('');
   const { login, loginWithGoogle, register, resetPassword } = useAuth();
->>>>>>> ce05389 (se agrego la configuracion de area de administrador, critico, se ajustaron los roles, se actualizaron los flujos y se agrego opción de recuperación de clave)
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-<<<<<<< HEAD
-    setLoading(true); setError('');
-=======
     setLoading(true); setError(''); setMensaje('');
->>>>>>> ce05389 (se agrego la configuracion de area de administrador, critico, se ajustaron los roles, se actualizaron los flujos y se agrego opción de recuperación de clave)
     const form = new FormData(e.currentTarget);
     const result = await login(form.get('email') as string, form.get('password') as string);
     if (result.success) {
@@ -40,11 +28,7 @@ export default function AuthPage() {
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-<<<<<<< HEAD
-    setLoading(true); setError('');
-=======
     setLoading(true); setError(''); setMensaje('');
->>>>>>> ce05389 (se agrego la configuracion de area de administrador, critico, se ajustaron los roles, se actualizaron los flujos y se agrego opción de recuperación de clave)
     const form = new FormData(e.currentTarget);
     const result = await register(
       form.get('nombre') as string,
@@ -60,8 +44,6 @@ export default function AuthPage() {
     setLoading(false);
   };
 
-<<<<<<< HEAD
-=======
   const handleResetPassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true); setError(''); setMensaje('');
@@ -76,7 +58,6 @@ export default function AuthPage() {
     setLoading(false);
   };
 
->>>>>>> ce05389 (se agrego la configuracion de area de administrador, critico, se ajustaron los roles, se actualizaron los flujos y se agrego opción de recuperación de clave)
   const handleGoogle = async () => {
     setLoading(true); setError('');
     const result = await loginWithGoogle();
@@ -84,7 +65,6 @@ export default function AuthPage() {
       setError(result.error || 'Error con Google SSO.');
       setLoading(false);
     }
-    // Si success, Supabase redirige automáticamente
   };
 
   return (
@@ -99,34 +79,21 @@ export default function AuthPage() {
         <div className={styles.tabs}>
           <button
             className={`${styles.tab} ${tab === 'login' ? styles.tabActivo : ''}`}
-<<<<<<< HEAD
-            onClick={() => { setTab('login'); setError(''); }}
-=======
             onClick={() => { setTab('login'); setError(''); setMensaje(''); }}
->>>>>>> ce05389 (se agrego la configuracion de area de administrador, critico, se ajustaron los roles, se actualizaron los flujos y se agrego opción de recuperación de clave)
           >
             Iniciar Sesión
           </button>
           <button
             className={`${styles.tab} ${tab === 'register' ? styles.tabActivo : ''}`}
-<<<<<<< HEAD
-            onClick={() => { setTab('register'); setError(''); }}
-=======
             onClick={() => { setTab('register'); setError(''); setMensaje(''); }}
->>>>>>> ce05389 (se agrego la configuracion de area de administrador, critico, se ajustaron los roles, se actualizaron los flujos y se agrego opción de recuperación de clave)
           >
             Registrarse
           </button>
         </div>
 
         {/* Mensajes */}
-<<<<<<< HEAD
-        {error   && <p className={styles.error}>{error}</p>}
-        {mensaje && <p className={styles.success}>{mensaje}</p>}
-=======
         {error   && <p className={styles.error}>⚠️ {error}</p>}
         {mensaje && <p className={styles.success}>✅ {mensaje}</p>}
->>>>>>> ce05389 (se agrego la configuracion de area de administrador, critico, se ajustaron los roles, se actualizaron los flujos y se agrego opción de recuperación de clave)
 
         {/* Formulario Login */}
         {tab === 'login' && (
@@ -135,9 +102,6 @@ export default function AuthPage() {
               className="input" required autoComplete="email" />
             <input name="password" type="password" placeholder="Contraseña"
               className="input" required autoComplete="current-password" />
-<<<<<<< HEAD
-            <button type="submit" className="btn btn-primario" disabled={loading} style={{ width: '100%' }}>
-=======
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-0.25rem' }}>
               <button
                 type="button"
@@ -156,14 +120,11 @@ export default function AuthPage() {
               </button>
             </div>
             <button type="submit" className="btn btn-primario" disabled={loading} style={{ width: '100%', marginTop: '0.5rem' }}>
->>>>>>> ce05389 (se agrego la configuracion de area de administrador, critico, se ajustaron los roles, se actualizaron los flujos y se agrego opción de recuperación de clave)
               {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
             </button>
           </form>
         )}
 
-<<<<<<< HEAD
-=======
         {/* Formulario Recuperación de Contraseña */}
         {tab === 'reset' && (
           <form onSubmit={handleResetPassword} className={styles.form}>
@@ -186,7 +147,6 @@ export default function AuthPage() {
           </form>
         )}
 
->>>>>>> ce05389 (se agrego la configuracion de area de administrador, critico, se ajustaron los roles, se actualizaron los flujos y se agrego opción de recuperación de clave)
         {/* Formulario Registro */}
         {tab === 'register' && (
           <form onSubmit={handleRegister} className={styles.form}>
@@ -196,11 +156,7 @@ export default function AuthPage() {
               className="input" required autoComplete="email" />
             <input name="password" type="password" placeholder="Contraseña (mín. 8 caracteres)"
               className="input" required minLength={8} autoComplete="new-password" />
-<<<<<<< HEAD
-            <button type="submit" className="btn btn-primario" disabled={loading} style={{ width: '100%' }}>
-=======
             <button type="submit" className="btn btn-primario" disabled={loading} style={{ width: '100%', marginTop: '0.5rem' }}>
->>>>>>> ce05389 (se agrego la configuracion de area de administrador, critico, se ajustaron los roles, se actualizaron los flujos y se agrego opción de recuperación de clave)
               {loading ? 'Registrando...' : 'Crear Cuenta'}
             </button>
           </form>

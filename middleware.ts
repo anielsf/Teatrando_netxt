@@ -39,6 +39,7 @@ const PROTECTED_ROUTES: Record<string, string[]> = {
 
   '/admin': [
     'Admin',
+    'Grupo th',
   ],
 };
 

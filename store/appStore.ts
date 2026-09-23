@@ -5,8 +5,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-// ─── Tipos ──────────────────────────────────────────────────────
-export type UserRole = 'Visitante' | 'Usuario' | 'Crítico' | 'Admin';
+export type UserRole = 'Visitante' | 'Usuario' | 'Crítico' | 'Admin' | 'Grupo th';
 
 export interface TeatrandoUser {
   id: string;
@@ -33,6 +32,10 @@ export interface Cartelera {
   sinopsis?: string;
   reparto?: string;
   visible: boolean;
+  grupo_teatral?: string;
+  id_usuario_grupo?: string;
+  butacas_disponibles?: number;
+  aforo_total?: number;
   teatroNombre?: string;
   teatroAforo?: number;
   criticas?: unknown[];

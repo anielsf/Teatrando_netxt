@@ -91,6 +91,15 @@ async function POST(req: Request) {
     ]
   );
 
+  try {
+    await query(
+      `UPDATE public.carteleras SET butacas_disponibles = GREATEST(0, COALESCE(butacas_disponibles, 80) - 1) WHERE id = $1`,
+      [id_obra]
+    );
+  } catch (e) {
+    // Fail-open si la columna no estuviera en una base no migrada
+  }
+
   logger.info('Ticket emitido', { ticketId, userId: user.id, obra, asiento });
   return Response.json({ success: true, ticket: rows[0] }, { status: 201 });
 }
