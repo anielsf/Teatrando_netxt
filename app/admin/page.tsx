@@ -6,17 +6,24 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function AdminPage() {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, session, isAdmin, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !isAdmin) {
+    // Solo redirigir si ya terminó de cargar la sesión y se confirma que NO es admin
+    if (!loading && session && !isAdmin) {
       router.push('/');
+    } else if (!loading && !session) {
+      router.push('/auth');
     }
-  }, [isAdmin, loading, router]);
+  }, [session, isAdmin, loading, router]);
 
-  if (loading) {
-    return <p style={{ textAlign: 'center', padding: '4rem', color: 'var(--color-texto-suave)' }}>Cargando panel...</p>;
+  if (loading || (session && !user)) {
+    return (
+      <div style={{ textAlign: 'center', padding: '5rem', color: 'var(--color-texto-suave)' }}>
+        Cargando panel de administración...
+      </div>
+    );
   }
 
   if (!isAdmin) {
