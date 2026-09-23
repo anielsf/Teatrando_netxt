@@ -85,9 +85,14 @@ export default function CarteleraPage() {
                     {obra.funcion} · {obra.sala}
                   </p>
                   <p style={{ color: 'var(--color-texto-muted)', fontSize: '0.82rem', marginBottom: '1rem' }}>
-                    📅 {obra.fecha && typeof obra.fecha === 'string' 
-    ? obra.fecha.split('T')[0].split('-').reverse().join('/') 
-    : (obra.fecha || '')} · ⏰ {obra.hora?.slice(0,5)} · 🎬 {obra.duracion_min} min
+                    📅 {(() => {
+  if (!obra.fecha || typeof obra.fecha !== 'string') return '';
+  // Extraemos la parte YYYY-MM-DD ignorando la T de la zona horaria
+  const fechaLimpia = obra.fecha.split('T')[0]; 
+  const partes = fechaLimpia.split('-'); // Separamos en [YYYY, MM, DD]
+  if (partes.length !== 3) return obra.fecha;
+  return `${partes[2]}/${partes[1]}/${partes[0]}`; // Retornamos DD/MM/YYYY
+})()} · ⏰ {obra.hora?.slice(0,5)} · 🎬 {obra.duracion_min} min
                   </p>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <div>
