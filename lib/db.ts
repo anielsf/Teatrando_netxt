@@ -10,7 +10,7 @@ let pool: Pool | null = null;
 
 function getPool(): Pool {
   if (!pool) {
-    const connectionString =
+    let connectionString =
       process.env.POSTGRES_URL ||
       process.env.DATABASE_URL ||
       process.env.SUPABASE_DB_URL;
@@ -21,9 +21,18 @@ function getPool(): Pool {
       );
     }
 
+    // Corregir parámetro SSL en la URL que inyecta Supabase automáticamente
+    if (connectionString.includes('sslmode=require')) {
+      connectionString = connectionString.replace('sslmode=require', 'sslmode=no-verify');
+    } else if (!connectionString.includes('sslmode=')) {
+      // Si no trae parámetro de SSL, concatenamos el correcto para evitar conflictos
+      const separator = connectionString.includes('?') ? '&' : '?';
+      connectionString = `${connectionString}${separator}sslmode=no-verify`;
+    }
+
     pool = new Pool({
       connectionString,
-      ssl: { rejectUnauthorized: false },
+      ssl: { rejectUnauthorized: false }, // Mantenemos el fallback manual por seguridad
       max: 5,
       idleTimeoutMillis: 30_000,
       connectionTimeoutMillis: 5_000,
