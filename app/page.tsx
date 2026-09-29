@@ -2,6 +2,8 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Inicio — Teatrando',
   description: 'Descubre las obras en cartelera y vive la experiencia teatral',
