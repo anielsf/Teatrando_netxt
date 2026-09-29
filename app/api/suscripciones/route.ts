@@ -5,6 +5,14 @@
 import { query } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { withErrorHandler, logger } from '@/lib/logger';
+import { obtenerTasaBCV, MENSAJE_TASA_NO_DISPONIBLE } from '@/lib/tasaBcv';
+
+// Precios oficiales de los planes (mantener en sync con PLANES_MEMBRESIA del modal).
+const PRECIO_PLAN_USD: Record<string, number> = {
+  'Plan Básico (Gratis)': 0,
+  'Plan Bambalinas': 9.99,
+  'Plan Crítico / VIP': 19.99,
+};
 
 async function POST(req: Request) {
   const authResult = await requireAuth();
@@ -12,13 +20,26 @@ async function POST(req: Request) {
   const { user } = authResult;
 
   const body = await req.json();
-  const plan       = body.plan || 'Plan Bambalinas';
-  const precioUSD  = parseFloat(body.precioUSD) || 9.99;
-  const tasaBCV    = parseFloat(body.tasaBCV) || 798.33;
-  const precioVES  = body.precioVES !== undefined
-    ? parseFloat(body.precioVES)
-    : Math.round(precioUSD * tasaBCV * 100) / 100;
-  const refPago    = (body.refPago || `REF-${Date.now()}`).toString().trim();
+  // El navegador solo elige el plan; precio, tasa y monto en Bs. se calculan aquí.
+  const plan: string = body.plan || 'Plan Bambalinas';
+  if (!Object.prototype.hasOwnProperty.call(PRECIO_PLAN_USD, plan)) {
+    return Response.json({ error: 'Plan de suscripción no válido.' }, { status: 400 });
+  }
+  const precioUSD = PRECIO_PLAN_USD[plan];
+
+  let tasaBCV = 0;
+  let precioVES = 0;
+  if (precioUSD > 0) {
+    const tasa = await obtenerTasaBCV();
+    if (!tasa.ok) {
+      return Response.json({ error: MENSAJE_TASA_NO_DISPONIBLE }, { status: 503 });
+    }
+    tasaBCV = tasa.tasa;
+    precioVES = Math.round(precioUSD * tasaBCV * 100) / 100;
+  }
+  // Plan gratuito: no se cobra nada, así que no depende de la tasa (se guarda 0).
+
+  const refPago = (body.refPago || `REF-${Date.now()}`).toString().trim();
 
   // Determinar nuevo rol según el plan
   let nuevoRol = 'Usuario';
