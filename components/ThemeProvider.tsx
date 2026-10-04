@@ -36,35 +36,73 @@ function applyThemeToCSSVars(tema: SeasonalTheme) {
     `'${tema.font_familia}', ${isSans ? 'Inter, system-ui, sans-serif' : 'Georgia, serif'}`
   );
 
-  // Tokens de superficie y borde (soporta configuracion jsonb o deducción contextual)
+  // ── Detección de tema claro vs oscuro ──────────────────────────
+  // Calcula la luminancia del color de fondo para saber si es claro u oscuro
+  const hexToRgb = (hex: string) => {
+    const h = hex.replace('#', '');
+    const r = parseInt(h.slice(0, 2), 16) / 255;
+    const g = parseInt(h.slice(2, 4), 16) / 255;
+    const b = parseInt(h.slice(4, 6), 16) / 255;
+    return { r, g, b };
+  };
+  const { r, g, b } = hexToRgb(tema.color_fondo.slice(0, 7));
+  const luminancia = 0.299 * r + 0.587 * g + 0.114 * b;
+  const esTemaClaro = luminancia > 0.5;
+
+  root.setAttribute('data-tema', esTemaClaro ? 'claro' : 'oscuro');
+
+  // ── Tokens de superficie y borde ──────────────────────────────
   const cfg = tema.configuracion || {};
-  const superficie =
-    cfg.panel ||
-    (tema.color_fondo === '#161a18' ? '#232a27' : tema.color_secundario);
-  const panelAlt = cfg.panel_alt || '#2a322e';
-  const panelSunken = cfg.panel_sunken || '#1a201d';
-  const borde =
-    cfg.line ||
-    (tema.color_fondo === '#161a18' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.12)');
-  const textoMuted =
-    cfg.text_muted ||
-    (tema.color_fondo === '#161a18' ? '#6b756d' : tema.color_texto_suave);
+
+  let superficie: string;
+  let borde: string;
+  let textoMuted: string;
+  let panelAlt: string;
+  let panelSunken: string;
+  let sombraCard: string;
+
+  if (cfg.panel) {
+    // Configuración explícita desde JSONB (ej. Microteatral Neón)
+    superficie   = cfg.panel;
+    panelAlt     = cfg.panel_alt    || superficie;
+    panelSunken  = cfg.panel_sunken || superficie;
+    borde        = cfg.line         || 'rgba(255,255,255,0.08)';
+    textoMuted   = cfg.text_muted   || tema.color_texto_suave;
+    sombraCard   = '0 4px 24px rgba(0,0,0,0.5)';
+  } else if (esTemaClaro) {
+    // Tema claro — superficies con mezcla blanca
+    superficie  = '#ffffff';
+    panelAlt    = '#f0f0f0';
+    panelSunken = '#e8e8e8';
+    borde       = 'rgba(0,0,0,0.12)';
+    textoMuted  = '#888888';
+    sombraCard  = '0 2px 16px rgba(0,0,0,0.10)';
+  } else {
+    // Tema oscuro estándar — superficies ligeramente más claras que el fondo
+    superficie  = tema.color_secundario;
+    panelAlt    = '#2a322e';
+    panelSunken = '#1a201d';
+    borde       = 'rgba(255,255,255,0.10)';
+    textoMuted  = tema.color_texto_suave;
+    sombraCard  = '0 4px 24px rgba(0,0,0,0.5)';
+  }
 
   root.style.setProperty('--color-superficie', superficie);
-  root.style.setProperty('--color-borde', borde);
+  root.style.setProperty('--color-borde',       borde);
   root.style.setProperty('--color-texto-muted', textoMuted);
-  root.style.setProperty('--panel-alt', panelAlt);
-  root.style.setProperty('--panel-sunken', panelSunken);
+  root.style.setProperty('--panel-alt',         panelAlt);
+  root.style.setProperty('--panel-sunken',      panelSunken);
+  root.style.setProperty('--sombra-card',       sombraCard);
 
-  // Sombras y resplandores dinámicos basados en el color primario
+  // Resplandor dinámico basado en el color primario
   root.style.setProperty(
     '--sombra-glow',
-    `0 0 24px color-mix(in srgb, ${tema.color_primario} 30%, transparent)`
+    `0 0 24px color-mix(in srgb, ${tema.color_primario} ${esTemaClaro ? '25%' : '30%'}, transparent)`
   );
 
-  // Tokens adicionales de acento (Microteatral Neón)
-  if (cfg.pink) root.style.setProperty('--color-pink', cfg.pink);
-  if (cfg.cyan) root.style.setProperty('--color-cyan', cfg.cyan);
+  // Tokens de acento adicionales (Microteatral Neón)
+  if (cfg.pink)   root.style.setProperty('--color-pink',   cfg.pink);
+  if (cfg.cyan)   root.style.setProperty('--color-cyan',   cfg.cyan);
   if (cfg.violet) root.style.setProperty('--color-violet', cfg.violet);
 }
 

@@ -119,13 +119,19 @@ img {
 
 .btn-primario {
   background: linear-gradient(135deg, var(--color-primario), var(--color-acento));
-  color: var(--color-fondo);
+  color: #ffffff;
 }
 
 .btn-primario:hover {
   transform: translateY(-2px);
   box-shadow: var(--sombra-glow);
-  color: var(--color-fondo);
+  color: #ffffff;
+}
+
+/* En temas muy claros, si el color primario es oscuro el texto blanco ya funciona.
+   Si el primario es claro (ej: amarillo), forzar texto oscuro */
+[data-tema="claro"] .btn-primario {
+  color: #ffffff;
 }
 
 .btn-secundario {
@@ -136,16 +142,16 @@ img {
 
 .btn-secundario:hover {
   background: var(--color-primario);
-  color: var(--color-fondo);
+  color: #ffffff;
 }
 
 .btn-peligro {
-  background: #8b1a2e;
+  background: #c0152e;
   color: #fff;
 }
 
 .btn-peligro:hover {
-  background: #a61f38;
+  background: #e01035;
 }
 
 .btn:disabled {
@@ -173,13 +179,33 @@ img {
 .input {
   width: 100%;
   padding: 0.7rem 1rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-superficie);
   border: 1px solid var(--color-borde);
   border-radius: var(--border-radius);
   color: var(--color-texto);
   font-family: var(--font-familia-ui);
   font-size: 0.95rem;
-  transition: border-color var(--transicion);
+  transition: border-color var(--transicion), background var(--transicion);
+  /* Forzar colores propios en lugar de los del sistema operativo */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Select: agrega flecha personalizada con el color primario */
+select.input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23888' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  background-size: 10px;
+  padding-right: 2.2rem;
+  cursor: pointer;
+}
+
+/* Opciones del select — el navegador las renderiza fuera del DOM,
+   forzamos el fondo y el color para evitar texto invisible */
+.input option {
+  background: var(--color-superficie);
+  color: var(--color-texto);
 }
 
 .input:focus {
@@ -190,6 +216,13 @@ img {
 
 .input::placeholder {
   color: var(--color-texto-muted);
+}
+
+/* Inputs de color nativo */
+input[type="color"].input {
+  padding: 0.25rem 0.4rem;
+  height: 2.4rem;
+  cursor: pointer;
 }
 
 /* ─── Badge de rol ───────────────────────────────────────────── */

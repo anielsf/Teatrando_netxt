@@ -9,6 +9,17 @@ interface ThemeManagerProps {
 
 const TEMAS_PREDEFINIDOS = [
   {
+    nombre: 'Día de Ensayo (Blanco & Elegante)',
+    color_primario: '#7c3aed',     // Violeta profundo — botones y acentos
+    color_secundario: '#ede9fe',   // Violeta muy suave — superficie de tarjetas
+    color_acento: '#a855f7',       // Violeta intermedio — hovers y badges
+    color_fondo: '#f8f7ff',        // Blanco ligeramente cálido
+    color_texto: '#1a1230',        // Casi negro con tono violeta
+    color_texto_suave: '#4b4060',  // Texto secundario oscuro
+    border_radius: '10px',
+    font_familia: 'Inter',
+  },
+  {
     nombre: 'Microteatral Caracas (Carbón & Neón)',
     color_primario: '#ff6f7d',
     color_secundario: '#1d2320',

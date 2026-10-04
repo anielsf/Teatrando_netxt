@@ -27,7 +27,11 @@ async function PATCH(req: Request, context?: Record<string, unknown>) {
   if (rows.length === 0) {
     return Response.json({ error: 'Solicitud no encontrada o ya resuelta.' }, { status: 404 });
   }
-  const sol = rows[0];
+  const sol = rows[0] as {
+    plan: string;
+    usuario_uuid: string;
+    rol_actual: string | null;
+  };
 
   if (accion === 'rechazar') {
     await query(`UPDATE suscripciones SET estado = 'Rechazada' WHERE id::text = $1`, [id]);
