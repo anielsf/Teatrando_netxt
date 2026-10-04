@@ -68,16 +68,22 @@ async function GET(req: Request) {
   const puedeVerMetricas = user?.rol === 'Admin' || user?.rol === 'Grupo th';
 
   if (puedeVerMetricas) {
-    // Grupo TH solo puede consultar sus propios datos. Admin puede usar
-    // ?grupo= para filtrar o dejarlo vacío para ver el consolidado general.
-    const filtroGrupo =
-      user?.rol === 'Grupo th'
-        ? user.nombre
-        : grupo || null;
+    // Grupo TH solo ve los datos de las carteleras que él creó (por dueño, no por nombre,
+    // para que no se pueda suplantar a otro grupo). Admin ve el consolidado general o
+    // filtra por nombre de grupo con ?grupo=.
+    const esGrupoTH = user?.rol === 'Grupo th';
+    const filtroGrupo = esGrupoTH ? user!.nombre : grupo || null;
 
     try {
-      const whereGrupo = filtroGrupo ? 'WHERE c.grupo_teatral = $1' : '';
-      const params = filtroGrupo ? [filtroGrupo] : [];
+      let whereGrupo = '';
+      let params: any[] = [];
+      if (esGrupoTH) {
+        whereGrupo = 'WHERE c.id_usuario_grupo = $1';
+        params = [user!.id];
+      } else if (grupo) {
+        whereGrupo = 'WHERE c.grupo_teatral = $1';
+        params = [grupo];
+      }
 
       // Ventas agrupadas por género
       const ventasPorGenero = await query(`
@@ -125,7 +131,7 @@ async function GET(req: Request) {
           c.genero
         FROM public.tickets t
         JOIN public.carteleras c ON t.id_obra = c.id
-        ${whereGrupo ? 'WHERE c.grupo_teatral = $1' : ''}
+        ${whereGrupo}
         ORDER BY t.created_at DESC
         LIMIT 100
       `, params);

@@ -1,18 +1,14 @@
 /**
  * API Route: /api/suscripciones
- * POST: Registrar nueva suscripción y actualizar rol en profiles
+ * POST: Registrar suscripción a un plan (los planes y precios salen de public.planes).
+ *  - Plan sin aprobación: se activa y actualiza rol/plan en profiles.
+ *  - Plan con aprobación: queda 'Pendiente' hasta que un Admin lo apruebe.
  */
 import { query } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { withErrorHandler, logger } from '@/lib/logger';
 import { obtenerTasaBCV, MENSAJE_TASA_NO_DISPONIBLE } from '@/lib/tasaBcv';
-
-// Precios oficiales de los planes (mantener en sync con PLANES_MEMBRESIA del modal).
-const PRECIO_PLAN_USD: Record<string, number> = {
-  'Plan Básico (Gratis)': 0,
-  'Plan Bambalinas': 9.99,
-  'Plan Crítico / VIP': 19.99,
-};
+import { obtenerPlan, rolResultante } from '@/lib/planes';
 
 async function POST(req: Request) {
   const authResult = await requireAuth();
@@ -20,12 +16,19 @@ async function POST(req: Request) {
   const { user } = authResult;
 
   const body = await req.json();
-  // El navegador solo elige el plan; precio, tasa y monto en Bs. se calculan aquí.
-  const plan: string = body.plan || 'Plan Bambalinas';
-  if (!Object.prototype.hasOwnProperty.call(PRECIO_PLAN_USD, plan)) {
-    return Response.json({ error: 'Plan de suscripción no válido.' }, { status: 400 });
+
+  // El navegador solo elige el plan; precio, tasa, monto y rol se calculan aquí.
+  const plan = await obtenerPlan(String(body.plan ?? ''));
+  if (!plan || !plan.activo) {
+    return Response.json({ error: 'Ese plan no está disponible.' }, { status: 400 });
   }
-  const precioUSD = PRECIO_PLAN_USD[plan];
+  const precioUSD = plan.precio_usd;
+
+  let refPago = String(body.refPago ?? '').trim();
+  if (precioUSD > 0 && !refPago) {
+    return Response.json({ error: 'La referencia de pago es obligatoria.' }, { status: 400 });
+  }
+  if (precioUSD === 0 && !refPago) refPago = 'PLAN-GRATIS';
 
   let tasaBCV = 0;
   let precioVES = 0;
@@ -37,42 +40,37 @@ async function POST(req: Request) {
     tasaBCV = tasa.tasa;
     precioVES = Math.round(precioUSD * tasaBCV * 100) / 100;
   }
-  // Plan gratuito: no se cobra nada, así que no depende de la tasa (se guarda 0).
 
-  const refPago = (body.refPago || `REF-${Date.now()}`).toString().trim();
+  const pendiente = plan.requiere_aprobacion && user.rol !== 'Admin';
+  const estado = pendiente ? 'Pendiente' : 'Activa';
 
-  // Determinar nuevo rol según el plan
-  let nuevoRol = 'Usuario';
-  if (plan === 'Plan Crítico / VIP') {
-    nuevoRol = 'Crítico';
-  } else if (user.rol === 'Admin') {
-    nuevoRol = 'Admin'; // Admin no pierde su rol
-  }
-
-  // 1. Registrar suscripción en historial
+  // 1. Registrar en el historial
   await query(
     `INSERT INTO suscripciones (id_usuario, usuario_uuid, plan, precio_usd, precio_ves, tasa_bcv, ref_pago, estado)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,'Activa')`,
-    [user.id, user.id, plan, precioUSD, precioVES, tasaBCV, refPago]
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+    [user.id, user.id, plan.clave, precioUSD, precioVES, tasaBCV, refPago, estado]
   );
 
-  // 2. Actualizar rol y plan en profiles
-  await query(
-    `UPDATE profiles SET
-       plan_suscripcion = $1,
-       rol = CASE WHEN rol = 'Admin' THEN 'Admin' ELSE $2 END,
-       updated_at = NOW()
-     WHERE id = $3`,
-    [plan, nuevoRol, user.id]
-  );
+  // 2. Si no necesita aprobación, aplicar plan y rol ya
+  let rol = user.rol as string;
+  if (!pendiente) {
+    rol = rolResultante(user.rol, plan.rol_otorgado);
+    await query(
+      `UPDATE profiles SET plan_suscripcion = $1, rol = $2, updated_at = NOW() WHERE id = $3`,
+      [plan.clave, rol, user.id]
+    );
+  }
 
-  logger.info('Suscripción registrada', { userId: user.id, plan, nuevoRol, refPago });
+  logger.info('Suscripción registrada', { userId: user.id, plan: plan.clave, estado, rol, refPago });
 
   return Response.json({
     success: true,
-    mensaje: `¡Suscripción activada con éxito al ${plan}!`,
-    plan,
-    rol: nuevoRol,
+    pendiente,
+    mensaje: pendiente
+      ? `Recibimos tu solicitud al ${plan.nombre}. Un administrador la revisará y activará tu plan.`
+      : `¡Suscripción activada con éxito al ${plan.nombre}!`,
+    plan: plan.nombre,
+    rol,
     precioUSD,
     precioVES,
     refPago,

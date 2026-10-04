@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal } from '@/components/Modal';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -14,32 +14,20 @@ const BANCOS_VENEZUELA = [
   { codigo: '0191', nombre: 'Banco Nacional de Crédito (BNC)' },
 ];
 
-const PLANES_MEMBRESIA = [
-  {
-    id: 'Plan Básico (Gratis)',
-    nombre: 'Plan Básico',
-    precioUSD: 0,
-    descripcion: 'Acceso estándar al repertorio de carteleras teatrales.',
-    beneficios: ['Consulta de funciones', 'Compra de tickets con pasarela nacional', 'Visualización de valoraciones'],
-    badge: 'Gratis',
-  },
-  {
-    id: 'Plan Bambalinas',
-    nombre: 'Plan Bambalinas',
-    precioUSD: 9.99,
-    descripcion: 'Para aficionados frecuentes al teatro caraqueño.',
-    beneficios: ['Cero comisiones de emisión de boleto', 'Acceso anticipado a preventas', 'Selección de butacas preferenciales'],
-    badge: 'Popular',
-  },
-  {
-    id: 'Plan Crítico / VIP',
-    nombre: 'Plan Crítico / VIP',
-    precioUSD: 19.99,
-    descripcion: 'Membresía oficial con rol de Crítico Teatral y privilegios VIP.',
-    beneficios: ['Rol y Badge oficial de Crítico Teatral', 'Comentar y puntuar de 1 a 5 estrellas', 'Críticas destacadas en cartelera', 'Invitaciones a funciones de gala'],
-    badge: 'Recomendado',
-  },
-];
+interface PlanItem {
+  id: string;            // clave del plan (lo que se guarda en la base de datos)
+  nombre: string;
+  precioUSD: number;
+  descripcion: string;
+  beneficios: string[];
+  badge: string;
+  destacado: boolean;
+  requiereAprobacion: boolean;
+}
+
+const PLAN_VACIO: PlanItem = {
+  id: '', nombre: '', precioUSD: 0, descripcion: '', beneficios: [], badge: '', destacado: false, requiereAprobacion: false,
+};
 
 interface SubscriptionModalProps {
   isOpen: boolean;
@@ -50,7 +38,9 @@ export function SubscriptionModal({ isOpen, onClose }: SubscriptionModalProps) {
   const { user, isAuthenticated } = useAuth();
   const { tasaBCV, convertToVES, formatVES } = useCurrency();
 
-  const [planSeleccionado, setPlanSeleccionado] = useState(PLANES_MEMBRESIA[2]); // Por defecto Crítico VIP
+  const [planes, setPlanes] = useState<PlanItem[]>([]);
+  const [cargandoPlanes, setCargandoPlanes] = useState(false);
+  const [planSeleccionado, setPlanSeleccionado] = useState<PlanItem>(PLAN_VACIO);
   const [paso, setPaso] = useState<'seleccion' | 'pago' | 'exito'>('seleccion');
 
   // Formulario Pago Móvil
@@ -63,9 +53,36 @@ export function SubscriptionModal({ isOpen, onClose }: SubscriptionModalProps) {
   const [error, setError] = useState('');
   const [resultadoSuscripcion, setResultadoSuscripcion] = useState<any | null>(null);
 
+  // Los planes visibles los configura el Admin (tabla public.planes)
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelado = false;
+    setCargandoPlanes(true);
+    fetch('/api/planes')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data: any[]) => {
+        if (cancelado) return;
+        const lista: PlanItem[] = (Array.isArray(data) ? data : []).map((p) => ({
+          id: p.clave,
+          nombre: p.nombre,
+          precioUSD: Number(p.precio_usd),
+          descripcion: p.descripcion,
+          beneficios: Array.isArray(p.beneficios) ? p.beneficios : [],
+          badge: p.badge,
+          destacado: !!p.destacado,
+          requiereAprobacion: !!p.requiere_aprobacion,
+        }));
+        setPlanes(lista);
+        setPlanSeleccionado(lista.find((p) => p.destacado) || lista[0] || PLAN_VACIO);
+      })
+      .catch(() => { if (!cancelado) setPlanes([]); })
+      .finally(() => { if (!cancelado) setCargandoPlanes(false); });
+    return () => { cancelado = true; };
+  }, [isOpen]);
+
   const precioVES = convertToVES(planSeleccionado.precioUSD);
 
-  const iniciarPago = (plan: typeof PLANES_MEMBRESIA[0]) => {
+  const iniciarPago = (plan: PlanItem) => {
     setPlanSeleccionado(plan);
     if (plan.precioUSD === 0) {
       // Plan básico gratuito
@@ -160,13 +177,18 @@ export function SubscriptionModal({ isOpen, onClose }: SubscriptionModalProps) {
         {paso === 'seleccion' && (
           <div>
             <p style={{ color: 'var(--color-texto-suave)', fontSize: '0.9rem', marginBottom: '1.5rem', textAlign: 'center' }}>
-              Elige tu nivel de membresía teatral para desbloquear beneficios exclusivos, eliminar cargos de boletería o convertirte en <strong>Crítico Oficial</strong>.
+              Elige tu membresía teatral y desbloquea los beneficios de cada plan.
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-              {PLANES_MEMBRESIA.map((plan) => {
+              {!cargandoPlanes && planes.length === 0 && (
+                <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--color-texto-suave)' }}>
+                  No hay planes disponibles por ahora.
+                </p>
+              )}
+              {planes.map((plan) => {
                 const esActual = user?.plan === plan.id;
-                const esVIP = plan.id === 'Plan Crítico / VIP';
+                const esVIP = plan.destacado;
                 return (
                   <div
                     key={plan.id}
@@ -218,7 +240,7 @@ export function SubscriptionModal({ isOpen, onClose }: SubscriptionModalProps) {
                       style={{ width: '100%', fontSize: '0.85rem' }}
                       disabled={esActual}
                     >
-                      {esActual ? 'Plan Activo' : plan.precioUSD === 0 ? 'Seleccionar Gratis' : 'Suscribirme con Pago Móvil'}
+                      {esActual ? 'Plan Activo' : plan.precioUSD === 0 ? (plan.requiereAprobacion ? 'Solicitar plan' : 'Seleccionar Gratis') : (plan.requiereAprobacion ? 'Solicitar con Pago Móvil' : 'Suscribirme con Pago Móvil')}
                     </button>
                   </div>
                 );
@@ -244,7 +266,7 @@ export function SubscriptionModal({ isOpen, onClose }: SubscriptionModalProps) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
               {/* Datos de Pago Móvil receptor */}
               <div style={{ background: 'rgba(201,162,75,0.1)', border: '1px solid rgba(201,162,75,0.3)', padding: '1.25rem', borderRadius: '10px', fontSize: '0.88rem' }}>
-                <h4 style={{ color: 'var(--color-primario)', margin: '0 0 0.75rem' }}>Datos para tu Pago Móvil:</h4>
+                <h4 style={{ color: 'var(--color-primario)', margin: '0 0 0.75rem' }}>📱 Datos para tu Pago Móvil:</h4>
                 <div style={{ display: 'grid', gap: '0.4rem' }}>
                   <div>• Banco Destino: <strong>0102 - Banco de Venezuela</strong></div>
                   <div>• Teléfono: <strong>0414-8328726</strong></div>
@@ -332,15 +354,19 @@ export function SubscriptionModal({ isOpen, onClose }: SubscriptionModalProps) {
 
         {paso === 'exito' && (
           <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
-            <span style={{ fontSize: '3.5rem' }}></span>
+            <span style={{ fontSize: '3.5rem' }}>{resultadoSuscripcion?.pendiente ? '⏳' : '🎉'}</span>
             <h2 style={{ fontFamily: 'var(--font-familia)', color: 'var(--color-primario)', margin: '0.5rem 0' }}>
-              ¡Membresía Activada con Éxito!
+              {resultadoSuscripcion?.pendiente ? '¡Solicitud enviada!' : '¡Membresía Activada con Éxito!'}
             </h2>
             <p style={{ color: '#22c55e', fontWeight: 600, fontSize: '1.05rem', marginBottom: '1rem' }}>
-              Ahora formas parte del {resultadoSuscripcion?.plan || planSeleccionado.nombre}
+              {resultadoSuscripcion?.pendiente
+                ? `Tu solicitud al ${resultadoSuscripcion?.plan || planSeleccionado.nombre} está en revisión`
+                : `Ahora formas parte del ${resultadoSuscripcion?.plan || planSeleccionado.nombre}`}
             </p>
             <p style={{ color: 'var(--color-texto-suave)', fontSize: '0.9rem', maxWidth: 450, margin: '0 auto 1.5rem' }}>
-              Tu rol ha sido actualizado a <strong>{resultadoSuscripcion?.rol || 'Crítico'}</strong>. Ya puedes comentar, calificar obras con estrellas de 1 a 5 y disfrutar tus beneficios exclusivos.
+              {resultadoSuscripcion?.pendiente
+                ? 'Un administrador verificará tu pago y activará el plan. Tu rol actual no cambia hasta entonces.'
+                : <>Tu rol es ahora <strong>{resultadoSuscripcion?.rol}</strong>. Ya puedes disfrutar los beneficios de tu plan.</>}
             </p>
             <button onClick={reiniciar} className="btn btn-primario">
               Continuar a Teatrando

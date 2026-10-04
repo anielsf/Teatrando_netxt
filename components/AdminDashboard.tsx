@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Modal } from '@/components/Modal';
 import { useCurrency } from '@/hooks/useCurrency';
 import { TheaterStatistics } from '@/components/TheaterStatistics';
+import { PlanesAdminPanel } from '@/components/PlanesAdminPanel';
 import { SubscriptionModal } from '@/components/SubscriptionModal';
 import { ThemeManager } from '@/components/ThemeManager';
 import { TicketValidator } from '@/components/TicketValidator';
@@ -58,7 +59,7 @@ export function AdminDashboard({ user }: { user: { id?: string; nombre: string; 
   const isGrupoTH = user.rol === 'Grupo th';
   const isAdmin = user.rol === 'Admin';
 
-  const [tab, setTab] = useState<'carteleras' | 'tickets' | 'metricas' | 'semanas_historicas' | 'grupo_stats' | 'validador' | 'tematizacion'>('carteleras');
+  const [tab, setTab] = useState<'carteleras' | 'tickets' | 'metricas' | 'semanas_historicas' | 'grupo_stats' | 'validador' | 'tematizacion' | 'planes'>('carteleras');
   const [carteleras, setCarteleras] = useState<CarteleraItem[]>([]);
   const [tickets, setTickets] = useState<TicketItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -453,6 +454,14 @@ export function AdminDashboard({ user }: { user: { id?: string; nombre: string; 
               >
                 Tematización
               </button>
+
+              <button
+                onClick={() => setTab('planes')}
+                className={`btn ${tab === 'planes' ? 'btn-primario' : 'btn-secundario'}`}
+                style={{ fontSize: '0.88rem' }}
+              >
+                Suscripciones
+              </button>
             </>
           )}
         </div>
@@ -831,6 +840,7 @@ export function AdminDashboard({ user }: { user: { id?: string; nombre: string; 
       )}
 
       {/* ─── PESTAÑA 5: RESUMEN Y AUDITORÍA ADMIN ─── */}
+      {tab === 'planes' && isAdmin && <PlanesAdminPanel />}
       {!loading && tab === 'metricas' && isAdmin && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
           <div className="card">

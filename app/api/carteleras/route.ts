@@ -29,6 +29,12 @@ async function GET(req: Request) {
     conditions.push('c.visible = true');
   }
 
+  // Grupo th: en la vista administrativa solo ve las carteleras que él creó.
+  if (adminView && user?.rol === 'Grupo th') {
+    params.push(user.id);
+    conditions.push(`c.id_usuario_grupo = $${params.length}`);
+  }
+
   if (grupoFiltro) {
     params.push(grupoFiltro);
     conditions.push(`c.grupo_teatral = $${params.length}`);
@@ -101,11 +107,14 @@ async function POST(req: Request) {
   const butacasDisp = butacas_disponibles !== undefined ? parseInt(butacas_disponibles, 10) : aforo;
 
   if (id) {
-    // Si es Grupo th, verificar que sea el creador o Admin
+    // Grupo th solo edita lo que creó. Una cartelera sin dueño (anterior a los grupos) es solo de Admin.
     if (user.rol === 'Grupo th') {
       const existente = await query<any>(`SELECT id_usuario_grupo FROM public.carteleras WHERE id = $1`, [id]);
-      if (existente.length > 0 && existente[0].id_usuario_grupo && existente[0].id_usuario_grupo !== user.id) {
-        return Response.json({ error: 'Solo puedes editar carteleras pertenecientes a tu grupo teatral.' }, { status: 403 });
+      if (existente.length === 0) {
+        return Response.json({ error: 'Cartelera no encontrada.' }, { status: 404 });
+      }
+      if (existente[0].id_usuario_grupo !== user.id) {
+        return Response.json({ error: 'Solo puedes editar carteleras creadas por ti.' }, { status: 403 });
       }
     }
 
@@ -161,11 +170,16 @@ async function DELETE(req: Request) {
     return Response.json({ error: 'ID de cartelera requerido.' }, { status: 400 });
   }
 
-  // Si es Grupo th, verificar que le pertenezca
+  // Admin puede eliminar cualquier cartelera. Grupo th solo las que él creó
+  // (las carteleras sin dueño solo las puede eliminar un Admin).
   if (user.rol === 'Grupo th') {
     const existente = await query<any>(`SELECT id_usuario_grupo FROM public.carteleras WHERE id = $1`, [id]);
-    if (existente.length > 0 && existente[0].id_usuario_grupo && existente[0].id_usuario_grupo !== user.id) {
-      return Response.json({ error: 'Solo puedes eliminar carteleras pertenecientes a tu grupo teatral.' }, { status: 403 });
+    if (existente.length === 0) {
+      return Response.json({ error: 'Cartelera no encontrada.' }, { status: 404 });
+    }
+    if (existente[0].id_usuario_grupo !== user.id) {
+      logger.warn('Intento de eliminar cartelera ajena', { id, por: user.id });
+      return Response.json({ error: 'Solo puedes eliminar carteleras creadas por ti.' }, { status: 403 });
     }
   }
 
