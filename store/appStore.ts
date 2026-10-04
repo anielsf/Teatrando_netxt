@@ -55,6 +55,7 @@ export interface SeasonalTheme {
   border_radius: string;
   font_familia: string;
   hero_image_url?: string;
+  configuracion?: Record<string, any>;
 }
 
 // ─── Store ───────────────────────────────────────────────────────

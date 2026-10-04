@@ -108,7 +108,7 @@ export default function CarteleraPage() {
                           fontSize: '2.5rem',
                         }}
                       >
-                        🎭
+
                       </div>
                     )}
 
@@ -126,7 +126,7 @@ export default function CarteleraPage() {
                           fontWeight: 600,
                         }}
                       >
-                        🎭 {obra.grupo_teatral || 'Compañía Residente'}
+                        {obra.grupo_teatral || 'Compañía Residente'}
                       </span>
                     </div>
 
@@ -135,7 +135,7 @@ export default function CarteleraPage() {
                       {obra.funcion} · {obra.sala}
                     </p>
                     <p style={{ color: 'var(--color-texto-muted)', fontSize: '0.82rem', marginBottom: '0.5rem' }}>
-                      📅 {obra.fecha ? new Date(obra.fecha).toLocaleDateString('es-ES', { timeZone: 'UTC' }) : ''} · ⏰ {obra.hora?.slice(0, 5)} · 🎬 {obra.duracion_min || 90} min
+                      {obra.fecha ? new Date(obra.fecha).toLocaleDateString('es-ES', { timeZone: 'UTC' }) : ''} · ⏰ {obra.hora?.slice(0, 5)} · 🎬 {obra.duracion_min || 90} min
                     </p>
 
                     {/* Label de Butacas disponibles */}
@@ -150,7 +150,7 @@ export default function CarteleraPage() {
                           borderRadius: '4px',
                         }}
                       >
-                        🪑 {obra.butacas_disponibles !== undefined ? obra.butacas_disponibles : 80} butacas disponibles
+                        {obra.butacas_disponibles !== undefined ? obra.butacas_disponibles : 80} butacas disponibles
                       </span>
                     </div>
                   </div>
@@ -219,10 +219,10 @@ export default function CarteleraPage() {
                   fontWeight: 600,
                 }}
               >
-                🎭 Creado por: {obraDetalle.grupo_teatral || 'Compañía Residente'}
+                Creado por: {obraDetalle.grupo_teatral || 'Compañía Residente'}
               </span>
               <span style={{ color: '#22c55e', fontWeight: 600, fontSize: '0.85rem' }}>
-                🪑 {obraDetalle.butacas_disponibles ?? 80} butacas disponibles
+                {obraDetalle.butacas_disponibles ?? 80} butacas disponibles
               </span>
             </div>
 
@@ -253,7 +253,7 @@ export default function CarteleraPage() {
                   handleComprar(o);
                 }}
               >
-                🎟️ Comprar Entrada con Pago Móvil
+                Comprar Entrada con Pago Móvil
               </button>
             </div>
 

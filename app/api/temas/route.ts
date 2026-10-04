@@ -41,8 +41,8 @@ async function POST(req: Request) {
       (nombre, descripcion, activo, fecha_inicio, fecha_fin,
        color_primario, color_secundario, color_acento, color_fondo,
        color_texto, color_texto_suave, border_radius, hero_image_url,
-       hero_image_mobile_url, logo_variant_url, font_familia)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+       hero_image_mobile_url, logo_variant_url, font_familia, configuracion)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
      RETURNING *`,
     [
       body.nombre, body.descripcion, body.activo ?? false,
@@ -53,6 +53,7 @@ async function POST(req: Request) {
       body.border_radius || '6px', body.hero_image_url,
       body.hero_image_mobile_url, body.logo_variant_url,
       body.font_familia || 'Playfair Display',
+      body.configuracion ? JSON.stringify(body.configuracion) : null,
     ]
   );
 
@@ -69,7 +70,7 @@ async function PUT(req: Request) {
   if (!id) return Response.json({ error: 'ID del tema requerido.' }, { status: 400 });
 
   if (body.activo) {
-    await query('UPDATE public.temas_estacionales SET activo = false WHERE id != \$1', [id]);
+    await query('UPDATE public.temas_estacionales SET activo = false WHERE id != $1', [id]);
   }
 
   await query(
@@ -78,15 +79,17 @@ async function PUT(req: Request) {
        color_primario=$6, color_secundario=$7, color_acento=$8, color_fondo=$9,
        color_texto=$10, color_texto_suave=$11, border_radius=$12,
        hero_image_url=$13, hero_image_mobile_url=$14, logo_variant_url=$15,
-       font_familia=$16, updated_at=NOW()
-     WHERE id=$17`,
+       font_familia=$16, configuracion=$17, updated_at=NOW()
+     WHERE id=$18`,
     [
       body.nombre, body.descripcion, body.activo ?? false,
       body.fecha_inicio, body.fecha_fin,
       body.color_primario, body.color_secundario, body.color_acento,
       body.color_fondo, body.color_texto, body.color_texto_suave,
       body.border_radius, body.hero_image_url, body.hero_image_mobile_url,
-      body.logo_variant_url, body.font_familia, id,
+      body.logo_variant_url, body.font_familia,
+      body.configuracion ? JSON.stringify(body.configuracion) : null,
+      id,
     ]
   );
 

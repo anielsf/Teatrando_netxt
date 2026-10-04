@@ -433,7 +433,7 @@ export function AdminDashboard({ user }: { user: { id?: string; nombre: string; 
             className={`btn ${tab === 'validador' ? 'btn-primario' : 'btn-secundario'}`}
             style={{ fontSize: '0.88rem' }}
           >
-            🎟️ Validador Taquilla
+            Validador Taquilla
           </button>
 
           {isAdmin && (
@@ -451,7 +451,7 @@ export function AdminDashboard({ user }: { user: { id?: string; nombre: string; 
                 className={`btn ${tab === 'tematizacion' ? 'btn-primario' : 'btn-secundario'}`}
                 style={{ fontSize: '0.88rem' }}
               >
-                🎨 Tematización
+                Tematización
               </button>
             </>
           )}
@@ -628,7 +628,7 @@ export function AdminDashboard({ user }: { user: { id?: string; nombre: string; 
                             }}
                             title="Eliminar cartelera"
                           >
-                            🗑️
+                            
                           </button>
                         </div>
                       </td>

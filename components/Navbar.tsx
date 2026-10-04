@@ -64,11 +64,11 @@ export function Navbar() {
             <button
               onClick={() => setModalSuscripcionOpen(true)}
               style={{
-                background: 'rgba(212, 175, 55, 0.12)',
-                border: '1px solid #d4af37',
-                color: '#d4af37',
+                background: 'color-mix(in srgb, var(--color-primario) 15%, transparent)',
+                border: '1px solid var(--color-primario)',
+                color: 'var(--color-primario)',
                 padding: '0.4rem 0.8rem',
-                borderRadius: '6px',
+                borderRadius: 'var(--border-radius)',
                 fontSize: '0.82rem',
                 fontWeight: 600,
                 cursor: 'pointer',

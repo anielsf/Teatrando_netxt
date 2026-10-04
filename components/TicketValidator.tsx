@@ -72,7 +72,7 @@ export function TicketValidator({ userRole, userName, onTicketValidado }: Ticket
       {/* Panel Principal de Validación */}
       <div className="card" style={{ padding: '1.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-          <span style={{ fontSize: '1.4rem' }}>🎟️</span>
+          <span style={{ fontSize: '1.4rem' }}></span>
           <h2 style={{ fontFamily: 'var(--font-familia)', color: 'var(--color-primario)', margin: 0 }}>
             Validación y Canje en Taquilla
           </h2>
@@ -191,7 +191,7 @@ export function TicketValidator({ userRole, userName, onTicketValidado }: Ticket
       {/* Historial Reciente de la Sesión en Puerta */}
       <div className="card" style={{ padding: '1.5rem' }}>
         <h3 style={{ fontFamily: 'var(--font-familia)', color: 'var(--color-primario)', margin: '0 0 0.5rem' }}>
-          📋 Últimos Boletos Validados
+          Últimos Boletos Validados
         </h3>
         <p style={{ color: 'var(--color-texto-suave)', fontSize: '0.85rem', marginBottom: '1rem' }}>
           Registro temporal de entradas canjeadas durante esta sesión operativa.

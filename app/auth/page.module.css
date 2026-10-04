@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: center;
   padding: 2rem 1rem;
-  background: radial-gradient(ellipse at center, #1a0a0d 0%, var(--color-fondo) 70%);
+  background: radial-gradient(ellipse at center, var(--color-superficie) 0%, var(--color-fondo) 70%);
 }
 
 .card {

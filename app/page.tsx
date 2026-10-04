@@ -42,7 +42,7 @@ export default async function HomePage() {
         <section style={{
           textAlign: 'center',
           padding: '5rem 1.5rem',
-          background: 'radial-gradient(ellipse at top, #1a0a0d 0%, var(--color-fondo) 60%)',
+          background: 'radial-gradient(ellipse at top, var(--color-superficie) 0%, var(--color-fondo) 70%)',
         }}>
           <div className="contenedor">
             <p style={{ color: 'var(--color-primario)', fontStyle: 'italic', marginBottom: '1rem' }}>

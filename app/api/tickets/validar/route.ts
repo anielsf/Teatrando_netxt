@@ -90,7 +90,7 @@ async function POST(req: Request) {
 
   return Response.json({
     success: true,
-    mensaje: `🎟️ Boleto [${ticketId}] validado exitosamente. Acceso permitido.`,
+    mensaje: `Boleto [${ticketId}] validado exitosamente. Acceso permitido.`,
     ticket: {
       ticket_id: ticket.ticket_id,
       obra: ticket.obra || ticket.obra_nombre,

@@ -42,7 +42,7 @@ export default function EstadisticasPage() {
                 margin: 0,
               }}
             >
-              🏛️ Microteatral & Semanas Pasadas
+              Microteatral & Semanas Pasadas
             </h1>
             <p
               style={{

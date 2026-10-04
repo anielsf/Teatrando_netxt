@@ -2,7 +2,7 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(13, 5, 7, 0.92);
+  background: color-mix(in srgb, var(--color-fondo) 92%, transparent);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--color-borde);
   padding: 0.75rem 0;
@@ -56,7 +56,7 @@
 
 .navLink.activo {
   color: var(--color-primario);
-  background: rgba(201, 162, 75, 0.1);
+  background: color-mix(in srgb, var(--color-primario) 12%, transparent);
 }
 
 .userArea {
@@ -70,9 +70,9 @@
   font-size: 0.75rem;
   padding: 0.2rem 0.6rem;
   border-radius: 100px;
-  background: rgba(201, 162, 75, 0.15);
+  background: color-mix(in srgb, var(--color-primario) 15%, transparent);
   color: var(--color-primario);
-  border: 1px solid rgba(201, 162, 75, 0.3);
+  border: 1px solid color-mix(in srgb, var(--color-primario) 30%, transparent);
   white-space: nowrap;
 }
 

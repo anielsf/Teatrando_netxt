@@ -9,6 +9,33 @@ interface ThemeManagerProps {
 
 const TEMAS_PREDEFINIDOS = [
   {
+    nombre: 'Microteatral Caracas (Carbón & Neón)',
+    color_primario: '#ff6f7d',
+    color_secundario: '#1d2320',
+    color_acento: '#49e3b4',
+    color_fondo: '#161a18',
+    color_texto: '#eef2ee',
+    color_texto_suave: '#a7b0a9',
+    border_radius: '14px',
+    font_familia: 'Sora',
+    configuracion: {
+      panel: '#232a27',
+      panel_alt: '#2a322e',
+      panel_sunken: '#1a201d',
+      line: 'rgba(255, 255, 255, 0.08)',
+      line_strong: 'rgba(255, 255, 255, 0.16)',
+      text_muted: '#6b756d',
+      pink: '#ff6f7d',
+      pink_deep: '#e85062',
+      pink_dark: '#661a24',
+      cyan: '#49e3b4',
+      cyan_deep: '#1fa379',
+      cyan_dark: '#0f3d30',
+      violet: '#c084ea',
+      slate: '#8a94a3',
+    },
+  },
+  {
     nombre: 'Gala Clásica (Oro & Vino)',
     color_primario: '#c9a24b',
     color_secundario: '#8b1a2e',
@@ -109,6 +136,7 @@ export function ThemeManager({ onThemeSaved }: ThemeManagerProps) {
       color_texto_suave: p.color_texto_suave,
       border_radius: p.border_radius,
       font_familia: p.font_familia,
+      configuracion: (p as any).configuracion || prev.configuracion,
     }));
   };
 
@@ -138,7 +166,7 @@ export function ThemeManager({ onThemeSaved }: ThemeManagerProps) {
         id: data.tema?.id,
       });
 
-      setMensaje('🎨 Tema estacional guardado y activado globalmente con éxito.');
+      setMensaje('Tema estacional guardado y activado globalmente con éxito.');
       if (onThemeSaved) onThemeSaved();
     } catch (err: any) {
       setError(err.message);
@@ -152,7 +180,7 @@ export function ThemeManager({ onThemeSaved }: ThemeManagerProps) {
       {/* Editor del Tema */}
       <div className="card" style={{ padding: '1.5rem' }}>
         <h2 style={{ fontFamily: 'var(--font-familia)', color: 'var(--color-primario)', marginBottom: '0.5rem' }}>
-          🎨 Motor de Tematización Estacional
+          Motor de Tematización Estacional
         </h2>
         <p style={{ color: 'var(--color-texto-suave)', fontSize: '0.88rem', marginBottom: '1.25rem' }}>
           Configura los ciclos visuales de 15 a 30 días para adaptar la plataforma según temporadas (Navidad, Semana Santa, Microteatral, etc.). Los cambios aplican dinámicamente en todo el sitio web mediante CSS Variables.
@@ -272,6 +300,7 @@ export function ThemeManager({ onThemeSaved }: ThemeManagerProps) {
                 <option value="4px">4px (Suave Moderno)</option>
                 <option value="6px">6px (Predeterminado Teatrando)</option>
                 <option value="12px">12px (Curvatura Pronunciada)</option>
+                <option value="14px">14px (Microteatral / Neón Moderno)</option>
                 <option value="25px">25px (Píldora / Redondo)</option>
               </select>
             </div>
@@ -285,6 +314,7 @@ export function ThemeManager({ onThemeSaved }: ThemeManagerProps) {
               onChange={(e) => setTemaForm({ ...temaForm, font_familia: e.target.value })}
             >
               <option value="Playfair Display">Playfair Display (Teatral Clásica)</option>
+              <option value="Sora">Sora (Microteatral / Geométrica Neón)</option>
               <option value="Inter">Inter (Moderna Minimalista)</option>
               <option value="Georgia">Georgia (Serif Tradicional)</option>
             </select>
@@ -307,7 +337,7 @@ export function ThemeManager({ onThemeSaved }: ThemeManagerProps) {
             disabled={guardando}
             style={{ justifyContent: 'center', marginTop: '0.5rem', padding: '0.75rem' }}
           >
-            {guardando ? 'Guardando y Aplicando...' : '💾 Activar Tema Estacional'}
+            {guardando ? 'Guardando y Aplicando...' : 'Activar Tema Estacional'}
           </button>
         </form>
       </div>
@@ -316,7 +346,7 @@ export function ThemeManager({ onThemeSaved }: ThemeManagerProps) {
       <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <div>
           <h3 style={{ fontFamily: 'var(--font-familia)', color: 'var(--color-primario)', marginBottom: '0.5rem' }}>
-            👁️ Vista Previa en Tiempo Real
+            Vista Previa en Tiempo Real
           </h3>
           <p style={{ color: 'var(--color-texto-suave)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
             Así visualizarán los espectadores los botones, tarjetas y colores de la temporada.
@@ -400,7 +430,7 @@ export function ThemeManager({ onThemeSaved }: ThemeManagerProps) {
         </div>
 
         <div style={{ marginTop: '1.5rem', padding: '0.75rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--border-radius)', fontSize: '0.8rem', color: 'var(--color-texto-muted)' }}>
-          💡 <strong>Tip:</strong> Al presionar <em>Activar Tema</em>, todos los visitantes conectados verán actualizarse el diseño instantáneamente sin necesidad de recompilar la aplicación.
+          <strong>Tip:</strong> Al presionar <em>Activar Tema</em>, todos los visitantes conectados verán actualizarse el diseño instantáneamente sin necesidad de recompilar la aplicación.
         </div>
       </div>
     </div>

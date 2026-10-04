@@ -87,7 +87,7 @@ export default async function CuentaPage() {
           {/* Cuenta y Membresía */}
           <div className="card">
             <h2 style={{ color: 'var(--color-primario)', marginBottom: '1.25rem' }}>
-              🎟️ Estado de Membresía
+              Estado de Membresía
             </h2>
             <div style={{ display: 'grid', gap: '0.85rem' }}>
               <div>
@@ -121,19 +121,19 @@ export default async function CuentaPage() {
           {/* Acciones */}
           <div className="card">
             <h2 style={{ color: 'var(--color-primario)', marginBottom: '1.25rem' }}>
-              ⚙️ Acciones Rápidas
+              Acciones Rápidas
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <a href="/cartelera" className="btn btn-primario">
-                🎭 Ver Cartelera
+                Ver Cartelera
               </a>
               {(user.rol === 'Admin' || user.rol === 'Grupo th') && (
                 <a href="/admin" className="btn btn-secundario">
-                  🏛️ {user.rol === 'Admin' ? 'Panel de Administración' : 'Gestión Grupo TH'}
+                  {user.rol === 'Admin' ? 'Panel de Administración' : 'Gestión Grupo TH'}
                 </a>
               )}
               <a href="/" className="btn btn-secundario">
-                🏠 Volver al Inicio
+                Volver al Inicio
               </a>
             </div>
           </div>
@@ -151,7 +151,7 @@ export default async function CuentaPage() {
                   margin: 0,
                 }}
               >
-                🎟️ Mis Boletos y Entradas
+                Mis Boletos y Entradas
               </h2>
               <p style={{ color: 'var(--color-texto-suave)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
                 Consulta tus accesos teatrales activos, asientos asignados y códigos QR para la entrada a sala.

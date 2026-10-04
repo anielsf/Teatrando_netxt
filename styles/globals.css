@@ -6,9 +6,9 @@
    ============================================================ */
 
 /* ─── Google Fonts ─────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=Sora:wght@600;700;800&display=swap');
 
-/* ─── Tema Base (paleta oro/vino) ───────────────────────────── */
+/* ─── Tema Base (paleta adaptable dinámicamente) ───────────── */
 :root {
   /* Colores principales */
   --color-primario:      #c9a24b;
@@ -20,6 +20,13 @@
   --color-texto:         #f5e6c8;
   --color-texto-suave:   #d8c9b3;
   --color-texto-muted:   #a08060;
+
+  /* Tokens complementarios (Microteatral Neón) */
+  --color-pink:          #ff6f7d;
+  --color-cyan:          #49e3b4;
+  --color-violet:        #c084ea;
+  --panel-alt:           #2a322e;
+  --panel-sunken:        #1a201d;
 
   /* Forma */
   --border-radius:       6px;
@@ -178,7 +185,7 @@ img {
 .input:focus {
   outline: none;
   border-color: var(--color-primario);
-  box-shadow: 0 0 0 3px rgba(201, 162, 75, 0.15);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primario) 20%, transparent);
 }
 
 .input::placeholder {
@@ -196,9 +203,9 @@ img {
   letter-spacing: 0.05em;
 }
 
-.badge-admin   { background: #c9a24b22; color: #c9a24b; border: 1px solid #c9a24b44; }
-.badge-critico { background: #d4af3722; color: #d4af37; border: 1px solid #d4af3744; }
-.badge-usuario { background: #8b1a2e22; color: #ff6b8a; border: 1px solid #8b1a2e44; }
+.badge-admin   { background: color-mix(in srgb, var(--color-primario) 15%, transparent); color: var(--color-primario); border: 1px solid color-mix(in srgb, var(--color-primario) 30%, transparent); }
+.badge-critico { background: color-mix(in srgb, var(--color-acento) 15%, transparent); color: var(--color-acento); border: 1px solid color-mix(in srgb, var(--color-acento) 30%, transparent); }
+.badge-usuario { background: color-mix(in srgb, var(--color-secundario) 25%, transparent); color: var(--color-texto); border: 1px solid var(--color-borde); }
 
 /* ─── Loading spinner ────────────────────────────────────────── */
 .spinner {

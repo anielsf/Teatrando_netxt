@@ -301,7 +301,7 @@ export function TheaterStatistics({ isAdmin = false, onAbrirSuscripciones }: The
               letterSpacing: '0.05em',
             }}
           >
-            🏛️ Sede Teatral Oficial
+            Sede Teatral Oficial
           </span>
           <h1
             style={{
@@ -326,7 +326,7 @@ export function TheaterStatistics({ isAdmin = false, onAbrirSuscripciones }: The
               className="btn btn-secundario"
               style={{ fontSize: '0.85rem', padding: '0.5rem 0.9rem' }}
             >
-              ➕ Cargar Datos de Semana
+              Cargar Datos de Semana
             </button>
           )}
 
@@ -564,7 +564,7 @@ export function TheaterStatistics({ isAdmin = false, onAbrirSuscripciones }: The
       <div style={{ background: '#13080c', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '1.5rem', marginBottom: '2rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span>🎭</span>
+            <span></span>
             <h3 style={{ fontSize: '0.95rem', fontWeight: 600, margin: 0, color: '#f5e6c8' }}>
               Comedia vs Drama — Semana 1 vs Semana 2
             </h3>

@@ -159,7 +159,7 @@ export default function CheckoutPage() {
             Por favor ingresa a la cartelera y selecciona la obra que deseas disfrutar.
           </p>
           <a href="/cartelera" className="btn btn-primario">
-            🎭 Ir a la Cartelera
+            Ir a la Cartelera
           </a>
         </main>
       </>
@@ -177,7 +177,7 @@ export default function CheckoutPage() {
           ===================================================== */
           <div style={{ maxWidth: 650, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-              <span style={{ fontSize: '3rem' }}>🎉</span>
+              <span style={{ fontSize: '3rem' }}></span>
               <h1 style={{ fontFamily: 'var(--font-familia)', color: 'var(--color-primario)', margin: '0.5rem 0' }}>
                 ¡Pago Confirmado y Boleto Emitido!
               </h1>
@@ -228,14 +228,14 @@ export default function CheckoutPage() {
                   <div>
                     <span style={{ fontSize: '0.78rem', color: 'var(--color-texto-muted)' }}>FECHA Y HORA:</span>
                     <div style={{ fontWeight: 600, color: 'var(--color-texto)' }}>
-                      📅 {ticketEmitido.fecha_funcion ? String(ticketEmitido.fecha_funcion).split('T')[0] : ''} · ⏰ {ticketEmitido.hora_funcion?.slice(0, 5) || '19:00'}
+                      {ticketEmitido.fecha_funcion ? String(ticketEmitido.fecha_funcion).split('T')[0] : ''} · {ticketEmitido.hora_funcion?.slice(0, 5) || '19:00'}
                     </div>
                   </div>
 
                   <div>
                     <span style={{ fontSize: '0.78rem', color: 'var(--color-texto-muted)' }}>BUTACA ASIGNADA:</span>
                     <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#4ade80' }}>
-                      🪑 Asiento {ticketEmitido.asiento}
+                      Asiento {ticketEmitido.asiento}
                     </div>
                   </div>
 
@@ -264,13 +264,13 @@ export default function CheckoutPage() {
 
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2.5rem', flexWrap: 'wrap' }}>
               <button onClick={() => window.print()} className="btn btn-secundario">
-                🖨️ Imprimir Boleto
+                Imprimir Boleto
               </button>
               <a href="/cuenta" className="btn btn-primario">
-                🎟️ Ver en Mi Cuenta
+                Ver en Mi Cuenta
               </a>
               <a href="/cartelera" className="btn btn-secundario">
-                🎭 Volver a la Cartelera
+                Volver a la Cartelera
               </a>
             </div>
           </div>
@@ -284,7 +284,7 @@ export default function CheckoutPage() {
                 ← Volver a la Cartelera
               </a>
               <h1 style={{ fontFamily: 'var(--font-familia)', color: 'var(--color-primario)', margin: '0.5rem 0' }}>
-                🎟️ Adquisición de Boletos Teatrales
+                Adquisición de Boletos Teatrales
               </h1>
               <p style={{ color: 'var(--color-texto-suave)' }}>
                 Selecciona tu butaca y realiza tu pago en Bolívares a la tasa oficial del Banco Central de Venezuela.
@@ -295,13 +295,13 @@ export default function CheckoutPage() {
               {/* COLUMNA IZQUIERDA: RESUMEN DE LA OBRA Y MAPA DE BUTACAS */}
               <div>
                 <div className="card" style={{ marginBottom: '1.5rem' }}>
-                  <h3 style={{ color: 'var(--color-primario)', marginBottom: '0.75rem' }}>🎭 Obra Seleccionada</h3>
+                  <h3 style={{ color: 'var(--color-primario)', marginBottom: '0.75rem' }}>Obra Seleccionada</h3>
                   <h2 style={{ fontFamily: 'var(--font-familia)', fontSize: '1.4rem', margin: '0 0 0.5rem' }}>{obra?.obra}</h2>
                   <p style={{ color: 'var(--color-texto-suave)', fontSize: '0.88rem', margin: '0 0 0.5rem' }}>
                     {obra?.funcion} · {obra?.sala}
                   </p>
                   <p style={{ color: 'var(--color-texto-muted)', fontSize: '0.85rem' }}>
-                    📅 {obra?.fecha ? String(obra.fecha).split('T')[0] : ''} · ⏰ {obra?.hora?.slice(0, 5)}
+                    {obra?.fecha ? String(obra.fecha).split('T')[0] : ''} · {obra?.hora?.slice(0, 5)}
                   </p>
 
                   <div style={{ marginTop: '1rem', borderTop: '1px solid var(--color-borde)', paddingTop: '1rem' }}>
@@ -322,7 +322,7 @@ export default function CheckoutPage() {
 
                 {/* Selección interactiva de butacas */}
                 <div className="card">
-                  <h3 style={{ color: 'var(--color-primario)', marginBottom: '0.5rem' }}>🪑 Selección de Butaca</h3>
+                  <h3 style={{ color: 'var(--color-primario)', marginBottom: '0.5rem' }}>Selección de Butaca</h3>
                   <p style={{ fontSize: '0.8rem', color: 'var(--color-texto-suave)', marginBottom: '1rem' }}>
                     Elige tu asiento preferido frente al escenario:
                   </p>
@@ -438,7 +438,7 @@ export default function CheckoutPage() {
                     className={`btn ${metodoPago === 'pagomovil' ? 'btn-primario' : 'btn-secundario'}`}
                     style={{ flex: 1, fontSize: '0.85rem', padding: '0.6rem 0.5rem' }}
                   >
-                    📱 Pago Móvil
+                    Pago Móvil
                   </button>
                   <button
                     type="button"
@@ -446,7 +446,7 @@ export default function CheckoutPage() {
                     className={`btn ${metodoPago === 'transferencia' ? 'btn-primario' : 'btn-secundario'}`}
                     style={{ flex: 1, fontSize: '0.85rem', padding: '0.6rem 0.5rem' }}
                   >
-                    🏦 Transferencia
+                    Transferencia
                   </button>
                   <button
                     type="button"
@@ -454,7 +454,7 @@ export default function CheckoutPage() {
                     className={`btn ${metodoPago === 'binance' ? 'btn-primario' : 'btn-secundario'}`}
                     style={{ flex: 1, fontSize: '0.85rem', padding: '0.6rem 0.5rem' }}
                   >
-                    🟡 Binance / Cripto
+                    Binance / Cripto
                   </button>
                 </div>
 
