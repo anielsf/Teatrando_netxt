@@ -8,6 +8,7 @@ import { PlanesAdminPanel } from '@/components/PlanesAdminPanel';
 import { SubscriptionModal } from '@/components/SubscriptionModal';
 import { ThemeManager } from '@/components/ThemeManager';
 import { TicketValidator } from '@/components/TicketValidator';
+import { ValidadorSuscripciones } from '@/components/ValidadorSuscripciones';
 
 interface CarteleraItem {
   id: string;
@@ -59,7 +60,7 @@ export function AdminDashboard({ user }: { user: { id?: string; nombre: string; 
   const isGrupoTH = user.rol === 'Grupo th';
   const isAdmin = user.rol === 'Admin';
 
-  const [tab, setTab] = useState<'carteleras' | 'tickets' | 'metricas' | 'semanas_historicas' | 'grupo_stats' | 'validador' | 'tematizacion' | 'planes'>('carteleras');
+  const [tab, setTab] = useState<'carteleras' | 'tickets' | 'metricas' | 'semanas_historicas' | 'grupo_stats' | 'validador' | 'tematizacion' | 'planes' | 'validar_suscripciones'>('carteleras');
   const [carteleras, setCarteleras] = useState<CarteleraItem[]>([]);
   const [tickets, setTickets] = useState<TicketItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -460,7 +461,15 @@ export function AdminDashboard({ user }: { user: { id?: string; nombre: string; 
                 className={`btn ${tab === 'planes' ? 'btn-primario' : 'btn-secundario'}`}
                 style={{ fontSize: '0.88rem' }}
               >
-                Suscripciones
+                Planes
+              </button>
+
+              <button
+                onClick={() => setTab('validar_suscripciones')}
+                className={`btn ${tab === 'validar_suscripciones' ? 'btn-primario' : 'btn-secundario'}`}
+                style={{ fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+              >
+                💳 Validar Pagos
               </button>
             </>
           )}
@@ -902,6 +911,13 @@ export function AdminDashboard({ user }: { user: { id?: string; nombre: string; 
               setMensaje('Tema estacional actualizado correctamente.');
             }}
           />
+        </div>
+      )}
+
+      {/* ─── PESTAÑA 8: VALIDACIÓN Y APROBACIÓN DE SUSCRIPCIONES (SOLO ADMIN) ─── */}
+      {tab === 'validar_suscripciones' && isAdmin && (
+        <div style={{ marginTop: '0.5rem' }}>
+          <ValidadorSuscripciones />
         </div>
       )}
 
