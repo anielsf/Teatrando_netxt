@@ -78,18 +78,18 @@ export function TicketValidator({ userRole, userName, onTicketValidado }: Ticket
           </h2>
         </div>
         <p style={{ color: 'var(--color-texto-suave)', fontSize: '0.88rem', marginBottom: '1.5rem' }}>
-          Ingresa el código alfanumérico del boleto (e.g. <code>TCK-M1A2B3C</code>) o pega el texto escaneado por el lector de código QR en la puerta del teatro.
+          Ingresa el código del boleto (e.g. <code>TCK-M1A2B3C</code>), carnet de membresía (e.g. <code>SUB-12</code>), correo del suscriptor o lee el código QR con el escáner de taquilla.
         </p>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
           <div>
             <label style={{ fontSize: '0.8rem', color: 'var(--color-texto-muted)', display: 'block', marginBottom: '0.35rem' }}>
-              CÓDIGO DE BOLETO O LECTURA QR
+              CÓDIGO DE BOLETO, MEMBRESÍA O LECTURA QR
             </label>
             <input
               type="text"
               className="input"
-              placeholder="Ej: TCK-M1N2O3P o payload JSON"
+              placeholder="Ej: TCK-M1N2O3P, SUB-12 o email del suscriptor"
               value={codigoInput}
               onChange={(e) => setCodigoInput(e.target.value)}
               autoFocus
@@ -108,7 +108,7 @@ export function TicketValidator({ userRole, userName, onTicketValidado }: Ticket
             disabled={validando || !codigoInput.trim()}
             style={{ justifyContent: 'center', padding: '0.75rem', fontSize: '0.95rem' }}
           >
-            {validando ? 'Verificando en Base de Datos...' : 'Validar Entrada'}
+            {validando ? 'Verificando en Base de Datos...' : 'Validar Entrada o Membresía'}
           </button>
         </form>
 
@@ -129,7 +129,7 @@ export function TicketValidator({ userRole, userName, onTicketValidado }: Ticket
           </div>
         )}
 
-        {/* Boleto Ya Canjeado (Alerta Anti-Fraude) */}
+        {/* Boleto o Membresía Ya Canjeada / Expirada */}
         {resultado?.yaUtilizado && (
           <div
             style={{
@@ -143,10 +143,12 @@ export function TicketValidator({ userRole, userName, onTicketValidado }: Ticket
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
               <span style={{ fontSize: '1.3rem' }}>🚫</span>
-              <strong style={{ color: '#facc15', fontSize: '1rem' }}>¡BOLETO YA CANJEADO!</strong>
+              <strong style={{ color: '#facc15', fontSize: '1rem' }}>
+                {resultado.suscripcion ? '¡MEMBRESÍA EXPIRADA O CANJES AGOTADOS!' : '¡BOLETO YA CANJEADO!'}
+              </strong>
             </div>
             <p style={{ fontSize: '0.88rem', margin: '0 0 0.5rem', color: 'var(--color-texto-suave)' }}>
-              Este boleto ya fue utilizado para ingresar anteriormente. <strong>Acceso denegado.</strong>
+              {resultado.mensaje || 'Acceso denegado.'}
             </p>
             {resultado.ticket && (
               <div style={{ fontSize: '0.82rem', background: 'rgba(0,0,0,0.3)', padding: '0.5rem 0.75rem', borderRadius: '4px' }}>
@@ -157,11 +159,50 @@ export function TicketValidator({ userRole, userName, onTicketValidado }: Ticket
                 {resultado.ticket.validado_por && <div><strong>Validado por:</strong> {resultado.ticket.validado_por}</div>}
               </div>
             )}
+            {resultado.suscripcion && (
+              <div style={{ fontSize: '0.82rem', background: 'rgba(0,0,0,0.3)', padding: '0.5rem 0.75rem', borderRadius: '4px' }}>
+                <div><strong>Plan:</strong> {resultado.suscripcion.plan}</div>
+                <div><strong>Titular:</strong> {resultado.suscripcion.usuario}</div>
+                {resultado.suscripcion.fecha_fin && (
+                  <div><strong>Vencimiento:</strong> {new Date(resultado.suscripcion.fecha_fin).toLocaleDateString('es-VE')}</div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Éxito - Entrada Autorizada */}
-        {resultado?.success && (
+        {/* Éxito - Membresía VIP Autorizada */}
+        {resultado?.success && resultado?.esSuscripcion && (
+          <div
+            style={{
+              marginTop: '1.25rem',
+              padding: '1.25rem',
+              background: 'rgba(34, 197, 94, 0.12)',
+              border: '1px solid #22c55e',
+              borderRadius: 'var(--border-radius)',
+              color: '#86efac',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '1.4rem' }}>🌟</span>
+              <strong style={{ color: '#4ade80', fontSize: '1.1rem' }}>MEMBRESÍA VIP VÁLIDA — ACCESO PERMITIDO</strong>
+            </div>
+            <div style={{ fontSize: '0.9rem', display: 'grid', gap: '0.35rem', marginTop: '0.75rem', color: 'var(--color-texto)' }}>
+              <div><strong>Carnet / ID:</strong> <span style={{ fontFamily: 'monospace', color: 'var(--color-primario)' }}>{resultado.suscripcion.id}</span></div>
+              <div><strong>Plan Activo:</strong> <strong style={{ color: 'var(--color-acento)' }}>{resultado.suscripcion.plan}</strong></div>
+              <div><strong>Suscriptor:</strong> {resultado.suscripcion.usuario} ({resultado.suscripcion.email})</div>
+              {resultado.suscripcion.fecha_fin && (
+                <div><strong>Vigencia:</strong> Válida hasta {new Date(resultado.suscripcion.fecha_fin).toLocaleDateString('es-VE')}</div>
+              )}
+              {resultado.suscripcion.entradas_restantes !== null && resultado.suscripcion.entradas_restantes !== undefined && (
+                <div><strong>Canjes Restantes:</strong> <span style={{ color: '#4ade80', fontWeight: 'bold' }}>{resultado.suscripcion.entradas_restantes} entradas</span> en este período</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Éxito - Entrada de Boleto Autorizada */}
+        {resultado?.success && !resultado?.esSuscripcion && (
           <div
             style={{
               marginTop: '1.25rem',
@@ -174,7 +215,7 @@ export function TicketValidator({ userRole, userName, onTicketValidado }: Ticket
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
               <span style={{ fontSize: '1.4rem' }}>✅</span>
-              <strong style={{ color: '#4ade80', fontSize: '1.1rem' }}>ENTRADA VÁLIDA — ACCESO PERMITIDO</strong>
+              <strong style={{ color: '#4ade80', fontSize: '1.1rem' }}>ENTRADA VÁLIDA — ACCESO PERMITIDO (BOLETO CANJEADO)</strong>
             </div>
             <div style={{ fontSize: '0.9rem', display: 'grid', gap: '0.35rem', marginTop: '0.75rem', color: 'var(--color-texto)' }}>
               <div><strong>Boleto:</strong> <span style={{ fontFamily: 'monospace', color: 'var(--color-primario)' }}>{resultado.ticket.ticket_id}</span></div>

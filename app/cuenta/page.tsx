@@ -6,6 +6,7 @@
 
 import { Navbar } from '@/components/Navbar';
 import { getAuthUser } from '@/lib/auth';
+import { query } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import { UserTicketsList } from '@/components/UserTicketsList';
 
@@ -17,6 +18,24 @@ export default async function CuentaPage() {
   if (!user) {
     redirect('/auth?next=/cuenta');
   }
+
+  // Consultar suscripción más reciente del usuario
+  const subs = await query<any>(
+    `SELECT id, plan, estado, fecha_inicio, fecha_fin, entradas_disponibles, entradas_totales, ref_pago
+     FROM public.suscripciones
+     WHERE usuario_uuid = $1
+     ORDER BY id DESC
+     LIMIT 1`,
+    [user.id]
+  ).catch(() => []);
+
+  const subActiva = subs[0] || null;
+  const hoy = new Date();
+  const fechaVence = subActiva?.fecha_fin ? new Date(subActiva.fecha_fin) : null;
+  const estaExpirada = subActiva?.estado === 'Expirada' || (fechaVence ? hoy > fechaVence : false);
+  const diasRestantes = fechaVence && !estaExpirada
+    ? Math.max(0, Math.ceil((fechaVence.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24)))
+    : 0;
 
   return (
     <>
@@ -115,6 +134,52 @@ export default async function CuentaPage() {
                   {user.plan}
                 </p>
               </div>
+
+              {subActiva && subActiva.estado === 'Activa' && (
+                <>
+                  <div>
+                    <small className="texto-suave">Vigencia y Vencimiento</small>
+                    <p style={{ marginTop: '0.25rem', fontSize: '0.9rem', color: estaExpirada ? '#ef4444' : '#4ade80', fontWeight: 600 }}>
+                      {estaExpirada ? (
+                        <>⚠️ Expirada el {fechaVence?.toLocaleDateString('es-VE')}</>
+                      ) : fechaVence ? (
+                        <>✓ Válida hasta {fechaVence.toLocaleDateString('es-VE')} ({diasRestantes} días restantes)</>
+                      ) : (
+                        <>✓ Plan Activo</>
+                      )}
+                    </p>
+                  </div>
+
+                  {subActiva.entradas_disponibles !== null && subActiva.entradas_disponibles !== undefined && (
+                    <div>
+                      <small className="texto-suave">Entradas de cortesía (canje)</small>
+                      <p style={{ marginTop: '0.25rem', fontSize: '0.95rem', color: 'var(--color-texto)', fontWeight: 600 }}>
+                        🎟️ {subActiva.entradas_disponibles} de {subActiva.entradas_totales || 2} disponibles este mes
+                      </p>
+                    </div>
+                  )}
+
+                  <div>
+                    <small className="texto-suave">Código de Carnet VIP (Taquilla)</small>
+                    <p style={{ marginTop: '0.25rem', fontFamily: 'monospace', color: 'var(--color-acento)', fontWeight: 700 }}>
+                      SUB-{subActiva.id}
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {subActiva && subActiva.estado === 'Pendiente' && (
+                <div style={{
+                  background: 'rgba(245,158,11,0.12)',
+                  border: '1px solid rgba(245,158,11,0.4)',
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: '6px',
+                  fontSize: '0.8rem',
+                  color: '#f59e0b',
+                }}>
+                  ⏳ Tu solicitud al <strong>{subActiva.plan}</strong> está en revisión por administración.
+                </div>
+              )}
             </div>
           </div>
 

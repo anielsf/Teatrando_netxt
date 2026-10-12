@@ -31,11 +31,128 @@ async function POST(req: Request) {
   );
 
   if (rows.length === 0) {
-    logger.warn('Intento de validar ticket inexistente', { ticketId, validador: user.nombre });
-    return Response.json(
-      { success: false, error: `Boleto [${ticketId}] no encontrado en el sistema.` },
-      { status: 404 }
+    // Si no es ticket, buscar si corresponde a una Suscripción o Membresía
+    const subClean = ticketId.replace(/^SUB-/, '');
+    const subRows = await query<any>(
+      `SELECT s.*, pl.nombre AS plan_nombre, pl.rol_otorgado,
+              p.nombre AS usuario_nombre, p.email AS usuario_email, p.rol AS usuario_rol
+       FROM public.suscripciones s
+       LEFT JOIN public.planes pl ON pl.clave = s.plan
+       LEFT JOIN public.profiles p ON p.id = s.usuario_uuid
+       WHERE s.id::text = $1 
+          OR UPPER(s.ref_pago) = $2
+          OR UPPER(p.email) = $2
+          OR s.id::text = $2
+       ORDER BY s.id DESC
+       LIMIT 1`,
+      [subClean, ticketId]
     );
+
+    if (subRows.length === 0) {
+      logger.warn('Intento de validar identificador inexistente', { ticketId, validador: user.nombre });
+      return Response.json(
+        { success: false, error: `Código [${ticketId}] no encontrado como boleto ni como suscripción.` },
+        { status: 404 }
+      );
+    }
+
+    const sub = subRows[0];
+
+    // a) Verificar si el pago de la suscripción está pendiente o rechazado
+    if (sub.estado === 'Pendiente') {
+      return Response.json({
+        success: false,
+        pagoPendiente: true,
+        error: `⛔ MEMBRESÍA PENDIENTE: La suscripción de ${sub.usuario_nombre || 'usuario'} está PENDIENTE de verificación de pago por administración.`,
+      }, { status: 403 });
+    }
+
+    if (sub.estado === 'Rechazada') {
+      return Response.json({
+        success: false,
+        pagoRechazado: true,
+        error: `❌ MEMBRESÍA RECHAZADA: La solicitud de suscripción de ${sub.usuario_nombre || 'usuario'} fue rechazada por administración.`,
+      }, { status: 403 });
+    }
+
+    // b) Verificar expiración por tiempo (vigencia de 30 días o fecha_fin)
+    const now = new Date();
+    const fechaFin = sub.fecha_fin ? new Date(sub.fecha_fin) : null;
+    const expiradaPorFecha = fechaFin ? now > fechaFin : false;
+
+    if (expiradaPorFecha || sub.estado === 'Expirada') {
+      await query(`UPDATE public.suscripciones SET estado = 'Expirada' WHERE id::text = $1`, [sub.id]).catch(() => {});
+      return Response.json({
+        success: false,
+        yaUtilizado: true,
+        mensaje: `⚠️ ¡MEMBRESÍA EXPIRADA! La suscripción al plan "${sub.plan_nombre || sub.plan}" venció el ${fechaFin ? fechaFin.toLocaleDateString('es-VE') : 'fecha límite'}.`,
+        suscripcion: {
+          id: `SUB-${sub.id}`,
+          plan: sub.plan_nombre || sub.plan,
+          usuario: sub.usuario_nombre,
+          fecha_fin: sub.fecha_fin,
+          estado: 'Expirada',
+        }
+      }, { status: 409 });
+    }
+
+    // c) Verificar entradas disponibles por canje
+    const entradasDisp = sub.entradas_disponibles !== undefined && sub.entradas_disponibles !== null
+      ? Number(sub.entradas_disponibles)
+      : null;
+
+    if (entradasDisp !== null && entradasDisp <= 0) {
+      return Response.json({
+        success: false,
+        yaUtilizado: true,
+        mensaje: `⚠️ ¡CANJES AGOTADOS! El suscriptor ${sub.usuario_nombre} ya utilizó todas las entradas de cortesía de su ciclo mensual.`,
+        suscripcion: {
+          id: `SUB-${sub.id}`,
+          plan: sub.plan_nombre || sub.plan,
+          usuario: sub.usuario_nombre,
+          entradas_disponibles: 0,
+        }
+      }, { status: 409 });
+    }
+
+    // d) Canjear entrada y registrar uso
+    let nuevasEntradas = entradasDisp !== null ? Math.max(0, entradasDisp - 1) : null;
+    let entradasCanjeadas = Number(sub.entradas_canjeadas || 0) + 1;
+
+    if (entradasDisp !== null) {
+      await query(
+        `UPDATE public.suscripciones 
+         SET entradas_disponibles = $1, 
+             entradas_canjeadas = $2,
+             updated_at = NOW()
+         WHERE id::text = $3`,
+        [nuevasEntradas, entradasCanjeadas, sub.id]
+      ).catch(() => {});
+    }
+
+    logger.info('Membresía validada en taquilla', {
+      subId: sub.id,
+      plan: sub.plan,
+      usuario: sub.usuario_nombre,
+      validador: user.nombre,
+      nuevasEntradas,
+    });
+
+    return Response.json({
+      success: true,
+      esSuscripcion: true,
+      mensaje: `✓ Membresía VIP validada exitosamente para ${sub.usuario_nombre}. Acceso permitido.` +
+        (nuevasEntradas !== null ? ` (Entradas restantes en este ciclo: ${nuevasEntradas})` : ''),
+      suscripcion: {
+        id: `SUB-${sub.id}`,
+        plan: sub.plan_nombre || sub.plan,
+        usuario: sub.usuario_nombre,
+        email: sub.usuario_email,
+        fecha_fin: sub.fecha_fin,
+        entradas_restantes: nuevasEntradas,
+        validado_por: user.nombre,
+      }
+    });
   }
 
   const ticket = rows[0];
