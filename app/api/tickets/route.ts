@@ -114,8 +114,8 @@ async function POST(req: Request) {
       (ticket_id, id_usuario, usuario_uuid, id_obra, nombre_cliente, email_cliente,
        obra, funcion, sala, asiento, fecha_funcion, hora_funcion,
        precio_usd, precio_ves, tasa_bcv, ref_pago,
-       fecha_emision, hora_emision)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+       fecha_emision, hora_emision, estado, utilizado)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
      RETURNING *`,
     [
       ticketId, user.id, user.id, id_obra,
@@ -126,6 +126,8 @@ async function POST(req: Request) {
       precio_usd, precio_ves, tasa_bcv, ref_pago,
       now.toISOString().split('T')[0],
       now.toTimeString().split(' ')[0],
+      'pendiente',
+      false,
     ]
   );
 

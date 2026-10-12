@@ -41,7 +41,8 @@ async function POST(req: Request) {
     precioVES = Math.round(precioUSD * tasaBCV * 100) / 100;
   }
 
-  const pendiente = plan.requiere_aprobacion && user.rol !== 'Admin';
+  // Toda suscripción de pago (precioUSD > 0) o que requiera aprobación debe quedar Pendiente hasta validación del Admin
+  const pendiente = (precioUSD > 0 || plan.requiere_aprobacion) && user.rol !== 'Admin';
   const estado = pendiente ? 'Pendiente' : 'Activa';
 
   // 1. Registrar en el historial
@@ -51,7 +52,8 @@ async function POST(req: Request) {
     [user.id, user.id, plan.clave, precioUSD, precioVES, tasaBCV, refPago, estado]
   );
 
-  // 2. Si no necesita aprobación, aplicar plan y rol ya
+  // 2. Si es gratis o no necesita aprobación, aplicar plan y rol ya.
+  // De lo contrario, queda pendiente y el Admin lo activará en /api/suscripciones/[id]
   let rol = user.rol as string;
   if (!pendiente) {
     rol = rolResultante(user.rol, plan.rol_otorgado);

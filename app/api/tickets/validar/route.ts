@@ -51,12 +51,45 @@ async function POST(req: Request) {
     );
   }
 
-  // Verificar si ya fue canjeado
+  // 1. Verificar si el pago del boleto ya fue validado por la administración
+  if (ticket.estado === 'pendiente') {
+    return Response.json({
+      success: false,
+      pagoPendiente: true,
+      error: `⛔ ACCESO DENEGADO: El pago del boleto [${ticketId}] aún no ha sido confirmado por administración (Ref: ${ticket.ref_pago || 'N/A'}). Debe ser validado antes de canjearse.`,
+      ticket: {
+        ticket_id: ticket.ticket_id,
+        obra: ticket.obra || ticket.obra_nombre,
+        asiento: ticket.asiento,
+        fecha_funcion: ticket.fecha_funcion,
+        nombre_cliente: ticket.nombre_cliente,
+        ref_pago: ticket.ref_pago,
+        estado: 'pendiente',
+      },
+    }, { status: 403 });
+  }
+
+  if (ticket.estado === 'rechazado') {
+    return Response.json({
+      success: false,
+      pagoRechazado: true,
+      error: `❌ BOLETO RECHAZADO: El pago del boleto [${ticketId}] fue rechazado por la administración. Acceso prohibido.`,
+      ticket: {
+        ticket_id: ticket.ticket_id,
+        obra: ticket.obra || ticket.obra_nombre,
+        asiento: ticket.asiento,
+        nombre_cliente: ticket.nombre_cliente,
+        estado: 'rechazado',
+      },
+    }, { status: 403 });
+  }
+
+  // 2. Verificar si ya fue canjeado / expirado previamente
   if (ticket.utilizado || ticket.estado === 'canjeado') {
     return Response.json({
       success: false,
       yaUtilizado: true,
-      mensaje: `⚠️ ¡ATENCIÓN! Este boleto ya fue CANJEADO previamente.`,
+      mensaje: `⚠️ ¡BOLETO EXPIRADO! Este boleto ya fue CANJEADO y expiró previamente en taquilla.`,
       ticket: {
         ticket_id: ticket.ticket_id,
         obra: ticket.obra || ticket.obra_nombre,

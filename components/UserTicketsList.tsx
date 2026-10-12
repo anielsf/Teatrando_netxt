@@ -163,11 +163,19 @@ export function UserTicketsList() {
                   </span>
                   {t.utilizado || t.estado === 'canjeado' ? (
                     <span className="badge badge-admin" style={{ fontSize: '0.7rem', background: 'rgba(234, 179, 8, 0.2)', color: '#facc15', border: '1px solid rgba(234, 179, 8, 0.5)' }}>
-                      CANJEADO EN PUERTA
+                      CANJEADO (EXPIRADO)
+                    </span>
+                  ) : t.estado === 'pendiente' ? (
+                    <span className="badge" style={{ fontSize: '0.7rem', background: 'rgba(245, 158, 11, 0.18)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.5)' }}>
+                      ⏳ PAGO EN REVISIÓN
+                    </span>
+                  ) : t.estado === 'rechazado' ? (
+                    <span className="badge" style={{ fontSize: '0.7rem', background: 'rgba(239, 68, 68, 0.18)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.5)' }}>
+                      ✕ PAGO RECHAZADO
                     </span>
                   ) : (
                     <span className="badge" style={{ fontSize: '0.7rem', background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.4)' }}>
-                      VÁLIDO PARA ACCESO
+                      ✓ VÁLIDO PARA ACCESO
                     </span>
                   )}
                 </div>
@@ -274,6 +282,51 @@ export function UserTicketsList() {
               <p style={{ color: 'var(--color-texto-suave)', fontSize: '0.9rem', margin: '0 0 1rem' }}>
                 {ticketSeleccionado.funcion} · {ticketSeleccionado.sala}
               </p>
+
+              {ticketSeleccionado.estado === 'pendiente' && (
+                <div style={{
+                  background: 'rgba(245, 158, 11, 0.15)',
+                  border: '1px solid rgba(245, 158, 11, 0.4)',
+                  color: '#f59e0b',
+                  padding: '0.65rem 0.9rem',
+                  borderRadius: '8px',
+                  fontSize: '0.82rem',
+                  marginBottom: '1rem',
+                  textAlign: 'center',
+                }}>
+                  ⏳ <strong>Pago pendiente de validación:</strong> La administración está verificando tu pago. Tu entrada quedará habilitada para el acceso en cuanto sea confirmada.
+                </div>
+              )}
+
+              {ticketSeleccionado.estado === 'rechazado' && (
+                <div style={{
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                  color: '#f87171',
+                  padding: '0.65rem 0.9rem',
+                  borderRadius: '8px',
+                  fontSize: '0.82rem',
+                  marginBottom: '1rem',
+                  textAlign: 'center',
+                }}>
+                  ✕ <strong>Pago rechazado:</strong> La referencia de pago reportada no pudo ser confirmada por administración.
+                </div>
+              )}
+
+              {(ticketSeleccionado.utilizado || ticketSeleccionado.estado === 'canjeado') && (
+                <div style={{
+                  background: 'rgba(234, 179, 8, 0.15)',
+                  border: '1px solid rgba(234, 179, 8, 0.4)',
+                  color: '#facc15',
+                  padding: '0.65rem 0.9rem',
+                  borderRadius: '8px',
+                  fontSize: '0.82rem',
+                  marginBottom: '1rem',
+                  textAlign: 'center',
+                }}>
+                  🎟️ <strong>Boleto canjeado (expirado):</strong> Este boleto ya fue utilizado para ingresar al teatro.
+                </div>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'center', margin: '1rem 0' }}>
                 {qrModalUrl && (

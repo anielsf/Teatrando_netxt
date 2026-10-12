@@ -179,10 +179,13 @@ export default function CheckoutPage() {
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
               <span style={{ fontSize: '3rem' }}></span>
               <h1 style={{ fontFamily: 'var(--font-familia)', color: 'var(--color-primario)', margin: '0.5rem 0' }}>
-                ¡Pago Confirmado y Boleto Emitido!
+                ¡Boleto Registrado con Éxito!
               </h1>
-              <p style={{ color: '#7ccc8e', fontWeight: 600 }}>
-                Tu pago mediante pasarela venezolana fue registrado con éxito.
+              <p style={{ color: '#f59e0b', fontWeight: 600 }}>
+                ⏳ Tu pago (Ref: {ticketEmitido.ref_pago}) está pendiente de verificación por administración.
+              </p>
+              <p style={{ color: 'var(--color-texto-suave)', fontSize: '0.85rem', marginTop: '0.35rem' }}>
+                Una vez confirmado por administración, tu entrada quedará habilitada para el canje de acceso en taquilla.
               </p>
             </div>
 

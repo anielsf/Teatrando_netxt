@@ -54,6 +54,10 @@ interface TicketItem {
   fecha_emision?: string;
   hora_emision?: string;
   grupo_teatral?: string;
+  estado?: string;
+  utilizado?: boolean;
+  fecha_utilizacion?: string;
+  validado_por?: string;
 }
 
 export function AdminDashboard({ user }: { user: { id?: string; nombre: string; email: string; rol: string } }) {
@@ -67,6 +71,7 @@ export function AdminDashboard({ user }: { user: { id?: string; nombre: string; 
   const [error, setError] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [busqueda, setBusqueda] = useState('');
+  const [filtroEstadoTicket, setFiltroEstadoTicket] = useState<'todos' | 'pendiente' | 'valido' | 'canjeado'>('todos');
 
   // Estadísticas del Grupo TH
   const [metricasGrupo, setMetricasGrupo] = useState<any>(null);
@@ -290,12 +295,42 @@ export function AdminDashboard({ user }: { user: { id?: string; nombre: string; 
     (c.grupo_teatral && c.grupo_teatral.toLowerCase().includes(busqueda.toLowerCase()))
   );
 
-  const ticketsFiltrados = tickets.filter((t) =>
-    (t.ticket_id && t.ticket_id.toLowerCase().includes(busqueda.toLowerCase())) ||
-    (t.obra && t.obra.toLowerCase().includes(busqueda.toLowerCase())) ||
-    (t.nombre_cliente && t.nombre_cliente.toLowerCase().includes(busqueda.toLowerCase())) ||
-    (t.ref_pago && t.ref_pago.toLowerCase().includes(busqueda.toLowerCase()))
-  );
+  const validarPagoTicket = async (ticketId: string, accion: 'aprobar' | 'rechazar') => {
+    try {
+      const res = await fetch(`/api/tickets/${ticketId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al validar pago del boleto');
+      setMensaje(data.mensaje);
+      setTickets((prev) =>
+        prev.map((t) => (t.ticket_id === ticketId || String(t.id) === ticketId ? { ...t, estado: data.estado } : t))
+      );
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const ticketsFiltrados = tickets
+    .filter((t) => {
+      if (filtroEstadoTicket === 'todos') return true;
+      if (filtroEstadoTicket === 'canjeado') return t.utilizado || t.estado === 'canjeado';
+      if (filtroEstadoTicket === 'valido') return !t.utilizado && t.estado === 'valido';
+      if (filtroEstadoTicket === 'pendiente') return !t.utilizado && (t.estado === 'pendiente' || !t.estado);
+      return true;
+    })
+    .filter((t) =>
+      (t.ticket_id && t.ticket_id.toLowerCase().includes(busqueda.toLowerCase())) ||
+      (t.obra && t.obra.toLowerCase().includes(busqueda.toLowerCase())) ||
+      (t.nombre_cliente && t.nombre_cliente.toLowerCase().includes(busqueda.toLowerCase())) ||
+      (t.ref_pago && t.ref_pago.toLowerCase().includes(busqueda.toLowerCase()))
+    );
+
+  const pendientesCount = tickets.filter((t) => !t.utilizado && (t.estado === 'pendiente' || !t.estado)).length;
+  const validadosCount = tickets.filter((t) => !t.utilizado && t.estado === 'valido').length;
+  const canjeadosCount = tickets.filter((t) => t.utilizado || t.estado === 'canjeado').length;
 
   // Cálculos de métricas
   const totalRecaudadoUSD = tickets.reduce((acc, t) => acc + (Number(t.precio_usd) || 0), 0);
@@ -662,13 +697,46 @@ export function AdminDashboard({ user }: { user: { id?: string; nombre: string; 
       {/* ─── PESTAÑA 2: VENTAS Y BOLETOS ─── */}
       {!loading && tab === 'tickets' && (
         <div>
+          {/* Filtros rápidos por estado de boleto */}
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--color-texto-muted)', fontWeight: 600 }}>FILTRAR POR:</span>
+            <button
+              onClick={() => setFiltroEstadoTicket('todos')}
+              className={`btn ${filtroEstadoTicket === 'todos' ? 'btn-primario' : 'btn-secundario'}`}
+              style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem' }}
+            >
+              Todos ({tickets.length})
+            </button>
+            <button
+              onClick={() => setFiltroEstadoTicket('pendiente')}
+              className={`btn ${filtroEstadoTicket === 'pendiente' ? 'btn-primario' : 'btn-secundario'}`}
+              style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem', borderColor: '#f59e0b', color: filtroEstadoTicket === 'pendiente' ? '#000' : '#f59e0b' }}
+            >
+              ⏳ Pendientes de Pago ({pendientesCount})
+            </button>
+            <button
+              onClick={() => setFiltroEstadoTicket('valido')}
+              className={`btn ${filtroEstadoTicket === 'valido' ? 'btn-primario' : 'btn-secundario'}`}
+              style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem', borderColor: '#22c55e', color: filtroEstadoTicket === 'valido' ? '#000' : '#4ade80' }}
+            >
+              ✓ Pagos Validados ({validadosCount})
+            </button>
+            <button
+              onClick={() => setFiltroEstadoTicket('canjeado')}
+              className={`btn ${filtroEstadoTicket === 'canjeado' ? 'btn-primario' : 'btn-secundario'}`}
+              style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem', borderColor: '#eab308', color: filtroEstadoTicket === 'canjeado' ? '#000' : '#facc15' }}
+            >
+              🎟️ Canjeados / Expirados ({canjeadosCount})
+            </button>
+          </div>
+
           {ticketsFiltrados.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
               <p style={{ color: 'var(--color-texto-suave)' }}>No se encontraron boletos registrados con ese criterio.</p>
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: 850 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: 950 }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid var(--color-borde)', color: 'var(--color-primario)' }}>
                     <th style={{ padding: '0.75rem' }}>Código / Fecha</th>
@@ -677,6 +745,8 @@ export function AdminDashboard({ user }: { user: { id?: string; nombre: string; 
                     <th style={{ padding: '0.75rem' }}>Asiento</th>
                     <th style={{ padding: '0.75rem' }}>Pago (USD / VES)</th>
                     <th style={{ padding: '0.75rem' }}>Ref. Pago</th>
+                    <th style={{ padding: '0.75rem' }}>Estado</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'right' }}>Validación de Pago</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -717,10 +787,58 @@ export function AdminDashboard({ user }: { user: { id?: string; nombre: string; 
                             padding: '0.2rem 0.5rem',
                             borderRadius: 4,
                             fontSize: '0.85rem',
+                            color: 'var(--color-acento)',
                           }}
                         >
                           {t.ref_pago}
                         </span>
+                      </td>
+                      <td style={{ padding: '0.75rem' }}>
+                        {t.utilizado || t.estado === 'canjeado' ? (
+                          <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.2)', color: '#facc15', border: '1px solid rgba(234, 179, 8, 0.5)', fontSize: '0.72rem' }}>
+                            🎟️ CANJEADO (EXPIRADO)
+                          </span>
+                        ) : t.estado === 'valido' ? (
+                          <span className="badge" style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.4)', fontSize: '0.72rem' }}>
+                            ✓ PAGO VALIDADO
+                          </span>
+                        ) : t.estado === 'rechazado' ? (
+                          <span className="badge" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.4)', fontSize: '0.72rem' }}>
+                            ✕ RECHAZADO
+                          </span>
+                        ) : (
+                          <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.4)', fontSize: '0.72rem' }}>
+                            ⏳ PENDIENTE DE PAGO
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ padding: '0.75rem', textAlign: 'right' }}>
+                        {t.utilizado || t.estado === 'canjeado' ? (
+                          <span style={{ fontSize: '0.78rem', color: 'var(--color-texto-muted)' }}>Expirado en puerta</span>
+                        ) : t.estado === 'valido' ? (
+                          <span style={{ fontSize: '0.78rem', color: '#4ade80' }}>Listo para taquilla</span>
+                        ) : t.estado === 'rechazado' ? (
+                          <span style={{ fontSize: '0.78rem', color: '#f87171' }}>Acceso denegado</span>
+                        ) : (
+                          <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                            <button
+                              onClick={() => validarPagoTicket(t.ticket_id, 'aprobar')}
+                              className="btn btn-primario"
+                              style={{ fontSize: '0.75rem', padding: '0.25rem 0.55rem', background: '#16a34a' }}
+                              title="Aprobar pago del boleto"
+                            >
+                              ✓ Confirmar
+                            </button>
+                            <button
+                              onClick={() => validarPagoTicket(t.ticket_id, 'rechazar')}
+                              className="btn btn-secundario"
+                              style={{ fontSize: '0.75rem', padding: '0.25rem 0.55rem', borderColor: '#ef4444', color: '#ef4444' }}
+                              title="Rechazar pago del boleto"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}
