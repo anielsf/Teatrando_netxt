@@ -179,7 +179,7 @@ Desarrollado para acercar el público al teatro y facilitar la gestión de su ex
 
 La documentación de la base de datos describe las tablas principales del esquema `public`, sus columnas, tipos de datos y las ocho relaciones conocidas entre usuarios, carteleras, teatros, entradas, interacciones y suscripciones.
 
-- [Consultar el inventario de tablas y relaciones](store/database.md)
+- [Consultar el inventario de tablas y relaciones](docs/database.md)
 - El diagrama muestra las relaciones proporcionadas; las consultas SQL del documento permiten contrastarlas con el esquema activo de Supabase.
 - Las credenciales y claves privadas deben configurarse mediante variables de entorno y nunca almacenarse en el repositorio.
 
