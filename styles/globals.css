@@ -91,9 +91,10 @@ img {
 
 /* ─── Utilitarios globales ───────────────────────────────────── */
 .contenedor {
-  max-width: 1200px;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 clamp(1rem, 2.5vw, 2.5rem);
 }
 
 .texto-primario  { color: var(--color-primario); }

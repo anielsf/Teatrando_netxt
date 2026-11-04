@@ -24,7 +24,7 @@ export default function EstadisticasPage() {
           background: 'var(--color-fondo)',
         }}
       >
-        <div className="contenedor" style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <div className="contenedor">
           <div style={{ marginBottom: '1.25rem' }}>
             <p
               style={{

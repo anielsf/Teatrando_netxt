@@ -6,15 +6,18 @@
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--color-borde);
   padding: 0.75rem 0;
+  width: 100%;
 }
 
 .contenedor {
-  max-width: 1200px;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 clamp(1rem, 2.5vw, 2.5rem);
   display: flex;
   align-items: center;
-  gap: 2rem;
+  justify-content: space-between;
+  gap: 1.25rem;
 }
 
 .logo {
@@ -34,19 +37,32 @@
 
 .navLinks {
   display: flex;
+  align-items: center;
   list-style: none;
-  gap: 0.25rem;
+  gap: clamp(0.25rem, 0.6vw, 0.75rem);
   flex: 1;
+  margin: 0 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.navLinks::-webkit-scrollbar {
+  display: none;
 }
 
 .navLink {
-  padding: 0.4rem 0.9rem;
+  padding: 0.45rem clamp(0.5rem, 0.75vw, 0.9rem);
   border-radius: var(--border-radius);
   color: var(--color-texto-suave);
-  font-size: 0.9rem;
+  font-size: clamp(0.82rem, 0.88vw, 0.92rem);
   font-weight: 500;
   transition: all var(--transicion);
   text-decoration: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .navLink:hover {
@@ -62,8 +78,9 @@
 .userArea {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: clamp(0.4rem, 0.7vw, 0.75rem);
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .userBadge {
@@ -74,20 +91,24 @@
   color: var(--color-primario);
   border: 1px solid color-mix(in srgb, var(--color-primario) 30%, transparent);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .userName {
   font-size: 0.85rem;
   color: var(--color-texto-suave);
-  max-width: 120px;
+  max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .btnLogout {
   font-size: 0.82rem;
   padding: 0.4rem 0.9rem;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 @media (max-width: 768px) {

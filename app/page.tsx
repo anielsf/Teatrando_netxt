@@ -41,7 +41,7 @@ export default async function HomePage() {
         {/* Hero Section */}
         <section style={{
           textAlign: 'center',
-          padding: '5rem 1.5rem',
+          padding: '5rem 0',
           background: 'radial-gradient(ellipse at top, var(--color-superficie) 0%, var(--color-fondo) 70%)',
         }}>
           <div className="contenedor">
@@ -71,9 +71,9 @@ export default async function HomePage() {
 
         {/* Estadísticas */}
         {stats && (
-          <section style={{ padding: '3rem 1.5rem', borderTop: '1px solid var(--color-borde)' }}>
+          <section style={{ padding: '3rem 0', borderTop: '1px solid var(--color-borde)' }}>
             <div className="contenedor">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem', textAlign: 'center' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', textAlign: 'center' }}>
                 {[
                   { valor: stats.total_funciones || 24, label: 'Funciones realizadas' },
                   { valor: `${stats.porcentaje_ocupacion || 91}%`, label: 'Ocupación promedio' },
@@ -96,7 +96,7 @@ export default async function HomePage() {
 
         {/* Obras Destacadas */}
         {obras && obras.length > 0 && (
-          <section style={{ padding: '3rem 1.5rem' }}>
+          <section style={{ padding: '3rem 0' }}>
             <div className="contenedor">
               <h2 style={{ fontFamily: 'var(--font-familia)', color: 'var(--color-primario)', marginBottom: '2rem' }}>
                 En Cartelera

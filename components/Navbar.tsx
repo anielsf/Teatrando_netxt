@@ -76,6 +76,8 @@ export function Navbar() {
                 alignItems: 'center',
                 gap: '0.35rem',
                 transition: 'all 0.2s ease',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
               }}
               title="Ver planes de membresía y beneficios VIP"
             >
@@ -93,7 +95,7 @@ export function Navbar() {
                 </button>
               </>
             ) : (
-              <Link href="/auth" className="btn btn-primario">
+              <Link href="/auth" className="btn btn-primario" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
                 Iniciar Sesión
               </Link>
             )}
