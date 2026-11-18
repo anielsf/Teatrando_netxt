@@ -191,14 +191,27 @@ export default function CheckoutPage() {
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
               <span style={{ fontSize: '3rem' }}></span>
               <h1 style={{ fontFamily: 'var(--font-familia)', color: 'var(--color-primario)', margin: '0.5rem 0' }}>
-                ¡Boleto Registrado con Éxito!
+                {ticketEmitido.estado === 'valido' ? '¡Boleto Emitido y Confirmado!' : '¡Boleto Registrado con Éxito!'}
               </h1>
-              <p style={{ color: '#f59e0b', fontWeight: 600 }}>
-                ⏳ Tu pago (Ref: {ticketEmitido.ref_pago}) está pendiente de verificación por administración.
-              </p>
-              <p style={{ color: 'var(--color-texto-suave)', fontSize: '0.85rem', marginTop: '0.35rem' }}>
-                Una vez confirmado por administración, tu entrada quedará habilitada para el canje de acceso en taquilla.
-              </p>
+              {ticketEmitido.estado === 'valido' ? (
+                <>
+                  <p style={{ color: '#4ade80', fontWeight: 600, margin: '0.35rem 0', fontSize: '1rem' }}>
+                    ✅ Pago Conciliado por Pasarela Bancaria (Ref: {ticketEmitido.ref_pago})
+                  </p>
+                  <p style={{ color: 'var(--color-texto-suave)', fontSize: '0.85rem', marginTop: '0.35rem' }}>
+                    Tu entrada está 100% activa. No requiere verificación manual: presenta el código QR directamente en puerta.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p style={{ color: '#f59e0b', fontWeight: 600 }}>
+                    ⏳ Tu pago (Ref: {ticketEmitido.ref_pago}) está pendiente de verificación por administración.
+                  </p>
+                  <p style={{ color: 'var(--color-texto-suave)', fontSize: '0.85rem', marginTop: '0.35rem' }}>
+                    Una vez confirmado por administración, tu entrada quedará habilitada para el canje de acceso en taquilla.
+                  </p>
+                </>
+              )}
             </div>
 
             {/* Boleto Teatral Digital */}
