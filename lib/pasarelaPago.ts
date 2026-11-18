@@ -45,6 +45,22 @@ export function esPasarelaConfigurada(): boolean {
   return true;
 }
 
+function normalizarTaxId(cedula?: string): string | undefined {
+  if (!cedula) return undefined;
+  const limpia = cedula.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!limpia) return undefined;
+  if (/^[VEJGP]\d{5,10}$/.test(limpia)) return limpia;
+  if (/^\d{5,10}$/.test(limpia)) return `V${limpia}`;
+  return undefined;
+}
+
+function normalizarTelefono(telefono?: string): string | undefined {
+  if (!telefono) return undefined;
+  const limpio = telefono.trim().replace(/[^0-9+]/g, '');
+  if (limpio.length >= 10 && limpio.length <= 15) return limpio;
+  return undefined;
+}
+
 /**
  * Procesa el pago de forma automatizada mediante la pasarela bancaria
  */
@@ -101,20 +117,22 @@ export async function procesarPagoPasarela(
   });
 
   try {
-    // Llamada oficial a la API de PagoLink para registrar la sesión/cobro real
-    const taxIdFormateado = solicitud.cliente.cedula
-      ? solicitud.cliente.cedula.replace(/[^a-zA-Z0-9]/g, '')
-      : undefined;
+    // Normalización de datos del cliente según las reglas estrictas de PagoLink (V/E/J/G/P + 5-10 dígitos)
+    const taxIdFormateado = normalizarTaxId(solicitud.cliente.cedula || solicitud.datosBancarios?.cedulaEmisor);
+    const telefonoFormateado = normalizarTelefono(solicitud.cliente.telefono || solicitud.datosBancarios?.telefonoEmisor);
+    const nombreCliente = (solicitud.cliente.nombre && solicitud.cliente.nombre.trim().length >= 3)
+      ? solicitud.cliente.nombre.trim()
+      : 'Espectador Teatrando';
 
     const payloadPagoLink = {
       amount: Number(solicitud.montoUsd || 1.0).toFixed(2),
       currency: 'USD',
       description: `Boleto Teatrando - ${solicitud.concepto || 'Entrada'}`,
       customer: {
-        name: solicitud.cliente.nombre || 'Espectador Teatrando',
+        name: nombreCliente,
         email: solicitud.cliente.email || 'tickets@teatrando.com',
-        ...(taxIdFormateado && taxIdFormateado.length >= 6 ? { taxId: taxIdFormateado } : {}),
-        ...(solicitud.cliente.telefono ? { phone: solicitud.cliente.telefono } : {}),
+        ...(taxIdFormateado ? { taxId: taxIdFormateado } : {}),
+        ...(telefonoFormateado ? { phone: telefonoFormateado } : {}),
       },
       metadata: {
         ticketId: solicitud.ticketId,
@@ -134,9 +152,43 @@ export async function procesarPagoPasarela(
       body: JSON.stringify(payloadPagoLink),
     });
 
+    let dataPagoLink: any = null;
+
     if (resPagoLink.ok) {
-      const dataPagoLink = await resPagoLink.json();
-      const referenciaOficial = dataPagoLink.number ? `PL-${dataPagoLink.number}` : (dataPagoLink.sessionId || numReferenciaFallback);
+      dataPagoLink = await resPagoLink.json();
+    } else {
+      const errorData = await resPagoLink.text();
+      logger.warn('Respuesta no exitosa de PagoLink, reintentando con payload simplificado', { errorData });
+
+      // Reintento limpio omitiendo campos de customer por si alguno rebotó en la validación
+      const retryRes = await fetch('https://api.pagolink.co/v1/checkout/sessions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': secretKey,
+        },
+        body: JSON.stringify({
+          amount: Number(solicitud.montoUsd || 1.0).toFixed(2),
+          currency: 'USD',
+          description: `Boleto Teatrando - ${solicitud.concepto || 'Entrada'}`,
+          metadata: {
+            ticketId: solicitud.ticketId,
+            montoVes: String(solicitud.montoVes),
+            tasaBcv: String(solicitud.tasaBcv),
+            metodo: solicitud.metodo,
+          },
+        }),
+      });
+
+      if (retryRes.ok) {
+        dataPagoLink = await retryRes.json();
+      }
+    }
+
+    if (dataPagoLink) {
+      const referenciaOficial = dataPagoLink.number
+        ? `PL-${dataPagoLink.number}`
+        : (dataPagoLink.sessionId || numReferenciaFallback);
 
       return {
         exito: true,
@@ -156,9 +208,6 @@ export async function procesarPagoPasarela(
           montoVes: solicitud.montoVes,
         },
       };
-    } else {
-      const errorData = await resPagoLink.text();
-      logger.warn('Respuesta no exitosa de PagoLink, aplicando modo de contingencia', { errorData });
     }
   } catch (errorApi) {
     logger.error('Error de conexión con API PagoLink, aplicando contingencia local', { errorApi });
