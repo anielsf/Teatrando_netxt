@@ -29,13 +29,14 @@ export default function CheckoutPage() {
   // Estados de checkout
   const [asientoSeleccionado, setAsientoSeleccionado] = useState<string>('A1');
   const [asientosOcupados, setAsientosOcupados] = useState<string[]>([]);
-  const [metodoPago, setMetodoPago] = useState<'pagomovil' | 'transferencia' | 'binance'>('pagomovil');
+  const [metodoPago, setMetodoPago] = useState<'pasarela' | 'pagomovil' | 'transferencia' | 'binance'>('pasarela');
 
-  // Formulario Pago Móvil
+  // Formulario Bancario y Pasarela
   const [bancoEmisor, setBancoEmisor] = useState('0102');
   const [telefonoEmisor, setTelefonoEmisor] = useState('');
   const [cedulaEmisor, setCedulaEmisor] = useState('');
   const [referenciaPago, setReferenciaPago] = useState('');
+  const [tokenOtp, setTokenOtp] = useState('');
 
   // Estados de proceso
   const [procesando, setProcesando] = useState(false);
@@ -82,14 +83,22 @@ export default function CheckoutPage() {
 
   const handlePagar = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!referenciaPago.trim()) {
-      setError('Por favor ingresa el número de referencia del comprobante de pago.');
-      return;
-    }
 
     if (!obra) {
       setError('No hay ninguna obra seleccionada.');
       return;
+    }
+
+    if (metodoPago === 'pasarela') {
+      if (!bancoEmisor || !telefonoEmisor.trim() || !cedulaEmisor.trim() || !tokenOtp.trim()) {
+        setError('Para procesar con la pasarela bancaria se requiere Banco, Cédula, Teléfono y Token OTP.');
+        return;
+      }
+    } else {
+      if (!referenciaPago.trim()) {
+        setError('Por favor ingresa el número de referencia del comprobante de pago.');
+        return;
+      }
     }
 
     setProcesando(true);
@@ -109,12 +118,14 @@ export default function CheckoutPage() {
           asiento: asientoSeleccionado,
           fecha_funcion: obra.fecha ? String(obra.fecha).split('T')[0] : new Date().toISOString().split('T')[0],
           hora_funcion: obra.hora || '19:00',
-          precio_usd: precioUSD,
-          precio_ves: precioVES,
-          tasa_bcv: tasaBCV,
-          ref_pago: refFormateada,
           nombre_cliente: user?.nombre || 'Espectador',
           email_cliente: user?.email || '',
+          metodo_pago: metodoPago,
+          banco_emisor: bancoEmisor,
+          telefono_emisor: telefonoEmisor.trim(),
+          cedula_emisor: cedulaEmisor.trim(),
+          token_otp: tokenOtp.trim(),
+          ref_pago: metodoPago === 'pasarela' ? undefined : refFormateada,
         }),
       });
 
@@ -132,6 +143,7 @@ export default function CheckoutPage() {
         fecha: data.ticket.fecha_funcion,
         ref: data.ticket.ref_pago,
         cliente: data.ticket.nombre_cliente,
+        estado: data.ticket.estado,
       });
 
       const qr = await QRCode.toDataURL(qrPayload, {
@@ -217,6 +229,17 @@ export default function CheckoutPage() {
                   <div style={{ color: 'var(--color-texto-muted)', fontSize: '0.75rem' }}>CÓDIGO DE TICKET</div>
                   <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '1.2rem', color: 'var(--color-acento)' }}>
                     {ticketEmitido.ticket_id}
+                  </div>
+                  <div style={{ marginTop: '0.4rem' }}>
+                    {ticketEmitido.estado === 'valido' ? (
+                      <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', border: '1px solid #22c55e', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>
+                        ✓ Pago Aprobado en Vivo
+                      </span>
+                    ) : (
+                      <span style={{ background: 'rgba(234, 179, 8, 0.2)', color: '#fde047', border: '1px solid #eab308', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>
+                        ⏳ Pendiente de Auditoría
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -434,12 +457,20 @@ export default function CheckoutPage() {
                 </p>
 
                 {/* Métodos de Pago */}
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setMetodoPago('pasarela')}
+                    className={`btn ${metodoPago === 'pasarela' ? 'btn-primario' : 'btn-secundario'}`}
+                    style={{ fontSize: '0.82rem', padding: '0.6rem 0.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                  >
+                    <span>⚡ Pasarela API</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => setMetodoPago('pagomovil')}
                     className={`btn ${metodoPago === 'pagomovil' ? 'btn-primario' : 'btn-secundario'}`}
-                    style={{ flex: 1, fontSize: '0.85rem', padding: '0.6rem 0.5rem' }}
+                    style={{ fontSize: '0.82rem', padding: '0.6rem 0.4rem' }}
                   >
                     Pago Móvil
                   </button>
@@ -447,7 +478,7 @@ export default function CheckoutPage() {
                     type="button"
                     onClick={() => setMetodoPago('transferencia')}
                     className={`btn ${metodoPago === 'transferencia' ? 'btn-primario' : 'btn-secundario'}`}
-                    style={{ flex: 1, fontSize: '0.85rem', padding: '0.6rem 0.5rem' }}
+                    style={{ fontSize: '0.82rem', padding: '0.6rem 0.4rem' }}
                   >
                     Transferencia
                   </button>
@@ -455,13 +486,39 @@ export default function CheckoutPage() {
                     type="button"
                     onClick={() => setMetodoPago('binance')}
                     className={`btn ${metodoPago === 'binance' ? 'btn-primario' : 'btn-secundario'}`}
-                    style={{ flex: 1, fontSize: '0.85rem', padding: '0.6rem 0.5rem' }}
+                    style={{ fontSize: '0.82rem', padding: '0.6rem 0.4rem' }}
                   >
                     Binance / Cripto
                   </button>
                 </div>
 
                 {/* Datos del receptor según el método */}
+                {metodoPago === 'pasarela' && (
+                  <div
+                    style={{
+                      background: 'rgba(34, 197, 94, 0.1)',
+                      border: '1px solid rgba(34, 197, 94, 0.3)',
+                      borderRadius: '8px',
+                      padding: '1rem',
+                      marginBottom: '1.5rem',
+                      fontSize: '0.88rem',
+                    }}
+                  >
+                    <div style={{ fontWeight: 600, color: '#4ade80', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <span>⚡ Pasarela Automatizada de Pago (C2P en Vivo)</span>
+                      <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.12)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                        API Conectada
+                      </span>
+                    </div>
+                    <p style={{ color: 'var(--color-texto-suave)', fontSize: '0.82rem', margin: '0 0 0.5rem 0' }}>
+                      Ingresa tu banco, teléfono y el <strong>Token OTP (Clave Dinámica)</strong> generado desde la app de tu banco. Tu boleto quedará aprobado de inmediato.
+                    </p>
+                    <div style={{ color: 'var(--color-primario)', fontWeight: 700 }}>
+                      • Monto a debitar: {formatVES(precioVES)} (${precioUSD} USD)
+                    </div>
+                  </div>
+                )}
+
                 {metodoPago === 'pagomovil' && (
                   <div
                     style={{
@@ -559,7 +616,7 @@ export default function CheckoutPage() {
 
                       <div>
                         <label style={{ fontSize: '0.8rem', color: 'var(--color-texto-suave)', display: 'block', marginBottom: '0.25rem' }}>
-                          Teléfono Pagador
+                          Teléfono Pagador *
                         </label>
                         <input
                           type="tel"
@@ -567,6 +624,7 @@ export default function CheckoutPage() {
                           className="input"
                           value={telefonoEmisor}
                           onChange={(e) => setTelefonoEmisor(e.target.value)}
+                          required={metodoPago === 'pasarela'}
                         />
                       </div>
                     </div>
@@ -587,19 +645,37 @@ export default function CheckoutPage() {
                       />
                     </div>
 
-                    <div>
-                      <label style={{ fontSize: '0.8rem', color: 'var(--color-texto-suave)', display: 'block', marginBottom: '0.25rem' }}>
-                        Nº de Referencia Bancaria *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Últimos dígitos (ej: 984721)"
-                        className="input"
-                        value={referenciaPago}
-                        onChange={(e) => setReferenciaPago(e.target.value)}
-                        required
-                      />
-                    </div>
+                    {metodoPago === 'pasarela' ? (
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: '#4ade80', display: 'block', marginBottom: '0.25rem', fontWeight: 600 }}>
+                          Clave Dinámica / Token OTP *
+                        </label>
+                        <input
+                          type="password"
+                          maxLength={8}
+                          placeholder="Clave de 6 a 8 dígitos"
+                          className="input"
+                          value={tokenOtp}
+                          onChange={(e) => setTokenOtp(e.target.value)}
+                          required
+                          style={{ borderColor: 'rgba(34, 197, 94, 0.4)' }}
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--color-texto-suave)', display: 'block', marginBottom: '0.25rem' }}>
+                          Nº de Referencia Bancaria *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Últimos dígitos (ej: 984721)"
+                          className="input"
+                          value={referenciaPago}
+                          onChange={(e) => setReferenciaPago(e.target.value)}
+                          required
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {error && <p style={{ color: '#ff8099', fontSize: '0.85rem', margin: 0 }}>⚠️ {error}</p>}
@@ -610,7 +686,11 @@ export default function CheckoutPage() {
                     disabled={procesando}
                     style={{ width: '100%', marginTop: '0.5rem', padding: '0.75rem' }}
                   >
-                    {procesando ? 'Validando y Emitiendo Boleto...' : `Confirmar y Emitir Boleto (${asientoSeleccionado})`}
+                    {procesando
+                      ? 'Conectando con la Pasarela y Emitiendo...'
+                      : metodoPago === 'pasarela'
+                      ? `⚡ Pagar y Emitir Boleto en Vivo (${asientoSeleccionado})`
+                      : `Confirmar y Emitir Boleto (${asientoSeleccionado})`}
                   </button>
                 </form>
               </div>

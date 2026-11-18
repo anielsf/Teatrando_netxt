@@ -8,6 +8,7 @@ import { query } from '@/lib/db';
 import { requireAuth, getAuthUser } from '@/lib/auth';
 import { withErrorHandler, logger } from '@/lib/logger';
 import { obtenerTasaBCV, MENSAJE_TASA_NO_DISPONIBLE } from '@/lib/tasaBcv';
+import { procesarPagoPasarela } from '@/lib/pasarelaPago';
 
 async function GET(req: Request) {
   const url = new URL(req.url);
@@ -61,11 +62,12 @@ async function POST(req: Request) {
     nombre_cliente, email_cliente, id_obra,
     obra, funcion, sala, asiento, fecha_funcion, hora_funcion,
     ref_pago,
+    metodo_pago, banco_emisor, telefono_emisor, cedula_emisor, token_otp,
   } = body;
 
-  if (!asiento || !ref_pago || !id_obra) {
+  if (!asiento || !id_obra) {
     return Response.json(
-      { error: 'Obra, asiento y referencia de pago son requeridos.' },
+      { error: 'Obra y asiento son requeridos.' },
       { status: 400 }
     );
   }
@@ -109,6 +111,52 @@ async function POST(req: Request) {
   const now = new Date();
   const ticketId = `TCK-${now.getTime().toString(36).toUpperCase()}`;
 
+  let estadoTicket = 'pendiente';
+  let referenciaFinal = ref_pago || '';
+
+  // PROCESAMIENTO CON PASARELA BANCARIA AUTOMATIZADA
+  if (metodo_pago === 'pasarela' || metodo_pago === 'c2p') {
+    const cobro = await procesarPagoPasarela({
+      metodo: 'c2p',
+      montoUsd: precio_usd,
+      montoVes: precio_ves,
+      tasaBcv: tasa_bcv,
+      concepto: `Teatrando: ${obra} - Asiento ${asiento}`,
+      ticketId,
+      cliente: {
+        nombre: nombre_cliente || user.nombre,
+        email: email_cliente || user.email,
+        cedula: cedula_emisor,
+        telefono: telefono_emisor,
+      },
+      datosBancarios: {
+        bancoEmisor: banco_emisor,
+        telefonoEmisor: telefono_emisor,
+        cedulaEmisor: cedula_emisor,
+        tokenOtp: token_otp,
+      },
+    });
+
+    if (!cobro.exito) {
+      return Response.json(
+        { error: cobro.mensaje || 'Pago no autorizado por la pasarela bancaria.' },
+        { status: 402 }
+      );
+    }
+
+    // Aprobación inmediata por pasarela de pago
+    estadoTicket = 'valido';
+    referenciaFinal = cobro.referencia;
+  } else {
+    // Método manual: requiere referencia escrita por el usuario
+    if (!referenciaFinal.trim()) {
+      return Response.json(
+        { error: 'Por favor indica la referencia del comprobante de pago manual.' },
+        { status: 400 }
+      );
+    }
+  }
+
   const rows = await query(
     `INSERT INTO tickets
       (ticket_id, id_usuario, usuario_uuid, id_obra, nombre_cliente, email_cliente,
@@ -123,10 +171,10 @@ async function POST(req: Request) {
       email_cliente || user.email,
       obra, funcion, sala, asiento,
       fecha_funcion, hora_funcion,
-      precio_usd, precio_ves, tasa_bcv, ref_pago,
+      precio_usd, precio_ves, tasa_bcv, referenciaFinal,
       now.toISOString().split('T')[0],
       now.toTimeString().split(' ')[0],
-      'pendiente',
+      estadoTicket,
       false,
     ]
   );
@@ -140,7 +188,7 @@ async function POST(req: Request) {
     // Fail-open si la columna no estuviera en una base no migrada
   }
 
-  logger.info('Ticket emitido', { ticketId, userId: user.id, obra, asiento, precio_usd, precio_ves, tasa_bcv });
+  logger.info('Ticket emitido', { ticketId, userId: user.id, obra, asiento, precio_usd, precio_ves, tasa_bcv, estado: estadoTicket });
   return Response.json({ success: true, ticket: rows[0] }, { status: 201 });
 }
 
