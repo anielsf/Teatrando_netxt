@@ -31,6 +31,11 @@ export default function CheckoutPage() {
   const [asientosOcupados, setAsientosOcupados] = useState<string[]>([]);
   const [metodoPago, setMetodoPago] = useState<'pasarela' | 'pagomovil' | 'transferencia' | 'binance'>('pasarela');
 
+  // Configuración de modo de pasarela (cargado desde admin)
+  const [modoPasarela, setModoPasarela] = useState<'pagolink_hosted' | 'c2p_directo'>('c2p_directo');
+  const [urlCheckoutPagoLink, setUrlCheckoutPagoLink] = useState<string>('');
+  const [cargandoSesionPagoLink, setCargandoSesionPagoLink] = useState(false);
+
   // Formulario Bancario y Pasarela
   const [bancoEmisor, setBancoEmisor] = useState('0102');
   const [telefonoEmisor, setTelefonoEmisor] = useState('');
@@ -49,6 +54,16 @@ export default function CheckoutPage() {
       router.push('/auth?next=/checkout');
     }
   }, [authLoading, isAuthenticated, router]);
+
+  // Cargar el modo de pasarela configurado por el admin
+  useEffect(() => {
+    fetch('/api/config-pago')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.modo) setModoPasarela(data.modo);
+      })
+      .catch(() => {});
+  }, []);
 
   // Cargar asientos ya ocupados para esta obra en tiempo real
   useEffect(() => {
@@ -89,6 +104,39 @@ export default function CheckoutPage() {
       return;
     }
 
+    // ── MODO PAGOLINK HOSTED: crear sesión y redirigir ──────────────────────
+    if (metodoPago === 'pasarela' && modoPasarela === 'pagolink_hosted') {
+      setCargandoSesionPagoLink(true);
+      setError('');
+      try {
+        const res = await fetch('/api/tickets/pagolink-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id_obra: obra.id,
+            obra: obra.obra,
+            asiento: asientoSeleccionado,
+            fecha_funcion: obra.fecha ? String(obra.fecha).split('T')[0] : new Date().toISOString().split('T')[0],
+            nombre_cliente: user?.nombre || 'Espectador',
+            email_cliente: user?.email || '',
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'No se pudo crear la sesión de pago.');
+        // Redirigir al checkout oficial de PagoLink
+        if (data.checkoutUrl) {
+          window.location.href = data.checkoutUrl;
+        } else {
+          throw new Error('URL de pago no disponible.');
+        }
+      } catch (err: any) {
+        setError(err.message);
+        setCargandoSesionPagoLink(false);
+      }
+      return;
+    }
+
+    // ── MODO C2P DIRECTO: validar campos y enviar ────────────────────────────
     if (metodoPago === 'pasarela') {
       if (!bancoEmisor || !telefonoEmisor.trim() || !cedulaEmisor.trim() || !tokenOtp.trim()) {
         setError('Para procesar con la pasarela bancaria se requiere Banco, Cédula, Teléfono y Token OTP.');
@@ -506,7 +554,32 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* Datos del receptor según el método */}
-                {metodoPago === 'pasarela' && (
+                {metodoPago === 'pasarela' && modoPasarela === 'pagolink_hosted' && (
+                  <div
+                    style={{
+                      background: 'rgba(34, 197, 94, 0.08)',
+                      border: '2px solid rgba(34, 197, 94, 0.4)',
+                      borderRadius: '12px',
+                      padding: '1.25rem',
+                      marginBottom: '1.5rem',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🌐</div>
+                    <div style={{ fontWeight: 700, color: '#4ade80', fontSize: '1rem', marginBottom: '0.4rem' }}>
+                      Pago a través del Checkout Oficial de PagoLink
+                    </div>
+                    <p style={{ color: 'var(--color-texto-suave)', fontSize: '0.85rem', margin: '0 0 0.75rem 0', lineHeight: 1.5 }}>
+                      Al continuar serás redirigido al portal de pago seguro de PagoLink donde podrás pagar con
+                      <strong> Pago Móvil, C2P, Binance Pay o Transferencia</strong>. Al completar tu pago, regresarás automáticamente con tu boleto confirmado.
+                    </p>
+                    <div style={{ color: 'var(--color-primario)', fontWeight: 700, fontSize: '1.1rem' }}>
+                      Total a pagar: {formatVES(precioVES)} (${precioUSD} USD)
+                    </div>
+                  </div>
+                )}
+
+                {metodoPago === 'pasarela' && modoPasarela === 'c2p_directo' && (
                   <div
                     style={{
                       background: 'rgba(34, 197, 94, 0.1)',
@@ -607,6 +680,26 @@ export default function CheckoutPage() {
 
                 {/* Formulario de reporte de pago */}
                 <form onSubmit={handlePagar} style={{ display: 'grid', gap: '0.9rem' }}>
+                  {/* En modo PagoLink Hosted, solo mostramos el botón de redireccion */}
+                  {metodoPago === 'pasarela' && modoPasarela === 'pagolink_hosted' ? (
+                    <>
+                      {error && <p style={{ color: '#ff8099', fontSize: '0.85rem', margin: 0 }}>⚠️ {error}</p>}
+                      <button
+                        type="submit"
+                        className="btn btn-primario"
+                        disabled={cargandoSesionPagoLink}
+                        style={{ width: '100%', marginTop: '0.5rem', padding: '0.9rem', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                      >
+                        {cargandoSesionPagoLink
+                          ? '⏳ Creando sesión de pago...'
+                          : `🌐 Ir al Checkout de PagoLink · Asiento ${asientoSeleccionado}`}
+                      </button>
+                      <p style={{ color: 'var(--color-texto-muted)', fontSize: '0.75rem', textAlign: 'center', margin: 0 }}>
+                        Serás redirigido a pay.pagolink.co para completar el pago de forma segura.
+                      </p>
+                    </>
+                  ) : (
+                    <>
                   {metodoPago !== 'binance' && (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
                       <div>
@@ -705,6 +798,8 @@ export default function CheckoutPage() {
                       ? `⚡ Pagar y Emitir Boleto en Vivo (${asientoSeleccionado})`
                       : `Confirmar y Emitir Boleto (${asientoSeleccionado})`}
                   </button>
+                    </>
+                  )}
                 </form>
               </div>
             </div>

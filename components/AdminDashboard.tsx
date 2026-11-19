@@ -9,6 +9,7 @@ import { SubscriptionModal } from '@/components/SubscriptionModal';
 import { ThemeManager } from '@/components/ThemeManager';
 import { TicketValidator } from '@/components/TicketValidator';
 import { ValidadorSuscripciones } from '@/components/ValidadorSuscripciones';
+import { PasarelaConfigPanel } from '@/components/PasarelaConfigPanel';
 
 interface CarteleraItem {
   id: string;
@@ -64,7 +65,7 @@ export function AdminDashboard({ user }: { user: { id?: string; nombre: string; 
   const isGrupoTH = user.rol === 'Grupo th';
   const isAdmin = user.rol === 'Admin';
 
-  const [tab, setTab] = useState<'carteleras' | 'tickets' | 'metricas' | 'semanas_historicas' | 'grupo_stats' | 'validador' | 'tematizacion' | 'planes' | 'validar_suscripciones'>('carteleras');
+  const [tab, setTab] = useState<'carteleras' | 'tickets' | 'metricas' | 'semanas_historicas' | 'grupo_stats' | 'validador' | 'tematizacion' | 'planes' | 'validar_suscripciones' | 'config_pago'>('carteleras');
   const [carteleras, setCarteleras] = useState<CarteleraItem[]>([]);
   const [tickets, setTickets] = useState<TicketItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -505,6 +506,14 @@ export function AdminDashboard({ user }: { user: { id?: string; nombre: string; 
                 style={{ fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
               >
                 💳 Validar Pagos
+              </button>
+
+              <button
+                onClick={() => setTab('config_pago')}
+                className={`btn ${tab === 'config_pago' ? 'btn-primario' : 'btn-secundario'}`}
+                style={{ fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.4rem', border: tab === 'config_pago' ? undefined : '1px solid rgba(201,162,75,0.4)' }}
+              >
+                ⚙️ Pasarela de Pago
               </button>
             </>
           )}
@@ -1036,6 +1045,13 @@ export function AdminDashboard({ user }: { user: { id?: string; nombre: string; 
       {tab === 'validar_suscripciones' && isAdmin && (
         <div style={{ marginTop: '0.5rem' }}>
           <ValidadorSuscripciones />
+        </div>
+      )}
+
+      {/* ─── PESTAÑA 9: CONFIGURACIÓN DE PASARELA DE PAGO (SOLO ADMIN) ─── */}
+      {tab === 'config_pago' && isAdmin && (
+        <div style={{ marginTop: '0.5rem' }}>
+          <PasarelaConfigPanel />
         </div>
       )}
 
