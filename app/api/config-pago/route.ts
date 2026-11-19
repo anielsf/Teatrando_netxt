@@ -1,11 +1,12 @@
+
 /**
  * API Route: /api/config-pago
  * GET  → Devuelve la configuración actual del modo de pago (público, sin auth)
  * POST → Cambia el modo de pago (solo Admin)
  *
  * Modos disponibles:
- *  - 'pagolink_hosted'  → Redirige al checkout oficial de PagoLink (URL externa)
- *  - 'c2p_directo'      → Formulario nativo embebido en la web de Teatrando
+ * - 'pagolink_hosted' → Checkout oficial de PagoLink
+ * - 'c2p_directo'     → Formulario nativo integrado en Teatrando
  */
 import { requireAdmin } from '@/lib/auth';
 import { withErrorHandler, logger } from '@/lib/logger';
@@ -28,7 +29,6 @@ async function leerConfig() {
     const raw = await fs.readFile(CONFIG_PATH, 'utf-8');
     return JSON.parse(raw);
   } catch {
-    // Si no existe el archivo, retorna configuración por defecto
     return DEFAULT_CONFIG;
   }
 }
@@ -43,14 +43,19 @@ async function escribirConfig(data: object) {
   }
 }
 
-async function GET() {
+// Manejador GET
+async function GETHandler() {
   const config = await leerConfig();
   return Response.json(config);
 }
 
-async function POST(req: Request) {
+// Manejador POST
+async function POSTHandler(req: Request) {
   const authResult = await requireAdmin();
-  if (authResult instanceof Response) return authResult;
+
+  if (authResult instanceof Response) {
+    return authResult;
+  }
 
   const { user } = authResult;
   const body = await req.json();
@@ -58,7 +63,9 @@ async function POST(req: Request) {
 
   if (!['pagolink_hosted', 'c2p_directo'].includes(modo)) {
     return Response.json(
-      { error: 'Modo de pago no válido. Usa "pagolink_hosted" o "c2p_directo".' },
+      {
+        error: 'Modo de pago no válido. Usa "pagolink_hosted" o "c2p_directo".',
+      },
       { status: 400 }
     );
   }
@@ -85,6 +92,6 @@ async function POST(req: Request) {
   return Response.json({ ok: true, config });
 }
 
-export const GET_ = withErrorHandler(GET);
-export const POST_ = withErrorHandler(POST);
-export { GET, POST };
+// Exportaciones compatibles con Next.js 14
+export const GET = withErrorHandler(GETHandler);
+export const POST = withErrorHandler(POSTHandler);
