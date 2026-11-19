@@ -99,12 +99,27 @@ export async function POST(req: Request) {
     // Se exige una tasa válida para que el equivalente mostrado en
     // Teatrando coincida con el que se envía a PagoLink.
     const tasa = await obtenerTasaBCV();
-    const tasaBcv = Number(tasa?.tasa);
 
-    if (!tasa?.ok || !Number.isFinite(tasaBcv) || tasaBcv <= 0) {
-      logger.warn('No se pudo obtener una tasa BCV válida para PagoLink.');
+    // ResultadoTasa es una unión discriminada:
+    // cuando ok=false solo existe { ok, error };
+    // la propiedad tasa solo está disponible cuando ok=true.
+    if (!tasa.ok) {
+      logger.warn('No se pudo obtener la tasa BCV para PagoLink.', {
+        error: tasa.error,
+      });
       return Response.json(
         { error: 'No se pudo obtener la tasa BCV. Intenta nuevamente.' },
+        { status: 503 }
+      );
+    }
+
+    // En este punto TypeScript ya sabe que tasa.ok es true.
+    const tasaBcv = Number(tasa.tasa);
+
+    if (!Number.isFinite(tasaBcv) || tasaBcv <= 0) {
+      logger.warn('La tasa BCV recibida no es válida para PagoLink.');
+      return Response.json(
+        { error: 'La tasa BCV recibida no es válida. Intenta nuevamente.' },
         { status: 503 }
       );
     }
