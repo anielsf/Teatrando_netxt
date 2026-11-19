@@ -1,16 +1,13 @@
 /**
  * API Route: /api/tickets/pagolink-session
  * POST → Crea una sesión de checkout en PagoLink.
- *
- * IMPORTANTE:
- * - La API key solo se lee desde PAYMENT_SECRET_KEY (servidor).
- * - PagoLink admite successUrl; afterCompletion NO es válido en esta ruta.
- * - El precio de ejemplo de abajo debe sustituirse por una consulta confiable
- *   a la cartelera/base de datos antes de habilitar cobros reales.
+ * El precio se obtiene desde public.carteleras.precio_usd.
+ * Nunca se acepta el importe enviado por el navegador.
  */
 import { requireAuth } from '@/lib/auth';
 import { obtenerTasaBCV } from '@/lib/tasaBcv';
 import { logger } from '@/lib/logger';
+import { createSupabaseAdminClient } from '@/lib/supabase/server';
 
 type CheckoutBody = {
   id_obra?: string;
@@ -30,28 +27,20 @@ function obtenerBaseUrl(): string {
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.APP_URL ||
     'https://teatrando-netxt.vercel.app';
-
   const url = new URL(raw);
-
   if (url.protocol !== 'https:') {
     throw new Error('La URL pública de Teatrando debe utilizar HTTPS.');
   }
-
   return url.origin;
 }
 
 export async function POST(req: Request) {
   try {
     const authResult = await requireAuth();
-
-    if (authResult instanceof Response) {
-      return authResult;
-    }
-
+    if (authResult instanceof Response) return authResult;
     const { user } = authResult;
 
     let body: CheckoutBody;
-
     try {
       body = await req.json();
     } catch {
@@ -73,9 +62,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // No se incluye una clave de prueba incrustada en el código.
     const secretKey = process.env.PAYMENT_SECRET_KEY?.trim();
-
     if (!secretKey) {
       logger.error('Falta PAYMENT_SECRET_KEY en las variables de entorno.');
       return Response.json(
@@ -84,25 +71,47 @@ export async function POST(req: Request) {
       );
     }
 
-    // IMPORTANTE: valor provisional conservado del código original.
-    // Sustituir por el precio real consultado desde la base de datos
-    // usando id_obra; nunca aceptar el precio enviado por el navegador.
-    const precioUsd = 1.00;
+    // Consultar precio autoritativo en Supabase.
+    // Esquema conocido: public.carteleras.id y precio_usd.
+    const supabase = createSupabaseAdminClient();
+    const { data: obraDB, error: errorObra } = await supabase
+      .from('carteleras')
+      .select('id, titulo, precio_usd')
+      .eq('id', id_obra)
+      .maybeSingle();
 
-    if (!Number.isFinite(precioUsd) || precioUsd <= 0) {
+    if (errorObra) {
+      logger.error('Error consultando precio de cartelera.', {
+        message: errorObra.message,
+        code: errorObra.code,
+        id_obra,
+      });
       return Response.json(
-        { error: 'El precio de la entrada no es válido.' },
+        { error: 'No se pudo consultar el precio de la obra.' },
+        { status: 500 }
+      );
+    }
+
+    if (!obraDB) {
+      return Response.json(
+        { error: 'No se encontró la obra seleccionada en la cartelera.' },
+        { status: 404 }
+      );
+    }
+
+    const precioUsd = Number(obraDB.precio_usd);
+    if (!Number.isFinite(precioUsd) || precioUsd <= 0) {
+      logger.warn('La obra no tiene un precio_usd válido.', {
+        id_obra,
+        precio_usd: obraDB.precio_usd,
+      });
+      return Response.json(
+        { error: 'La obra no tiene un precio válido en dólares.' },
         { status: 400 }
       );
     }
 
-    // Se exige una tasa válida para que el equivalente mostrado en
-    // Teatrando coincida con el que se envía a PagoLink.
     const tasa = await obtenerTasaBCV();
-
-    // ResultadoTasa es una unión discriminada:
-    // cuando ok=false solo existe { ok, error };
-    // la propiedad tasa solo está disponible cuando ok=true.
     if (!tasa.ok) {
       logger.warn('No se pudo obtener la tasa BCV para PagoLink.', {
         error: tasa.error,
@@ -113,9 +122,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // En este punto TypeScript ya sabe que tasa.ok es true.
     const tasaBcv = Number(tasa.tasa);
-
     if (!Number.isFinite(tasaBcv) || tasaBcv <= 0) {
       logger.warn('La tasa BCV recibida no es válida para PagoLink.');
       return Response.json(
@@ -125,23 +132,21 @@ export async function POST(req: Request) {
     }
 
     const baseUrl = obtenerBaseUrl();
-
     const successUrl = new URL('/checkout', baseUrl);
     successUrl.searchParams.set('pago_ok', '1');
     successUrl.searchParams.set('asiento', asiento);
     successUrl.searchParams.set('obra', id_obra);
 
     const nombre = textoSeguro(body.nombre_cliente || user.nombre, 120);
-    const nombreValido =
-      nombre.length >= 3 ? nombre : 'Espectador Teatrando';
-
+    const nombreValido = nombre.length >= 3 ? nombre : 'Espectador Teatrando';
     const email = textoSeguro(body.email_cliente || user.email, 200);
+    const nombreObra = textoSeguro(obraDB.titulo || obra, 200) || 'Obra';
 
     const payloadPagoLink = {
       amount: precioUsd.toFixed(2),
       currency: 'USD',
       exchangeRate: String(tasaBcv),
-      description: `Boleto Teatrando · ${obra || 'Obra'} · Asiento ${asiento}`,
+      description: `Boleto Teatrando · ${nombreObra} · Asiento ${asiento}`,
       customer: {
         name: nombreValido,
         ...(email ? { email } : {}),
@@ -152,30 +157,24 @@ export async function POST(req: Request) {
         fecha_funcion,
         usuario_id: String(user.id),
         modo: 'pagolink_hosted',
+        precio_usd: precioUsd.toFixed(2),
       },
-      // Campo admitido por POST /v1/checkout/sessions.
-      // No usar afterCompletion en esta solicitud.
       successUrl: successUrl.toString(),
     };
 
-    const res = await fetch(
-      'https://api.pagolink.co/v1/checkout/sessions',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': secretKey,
-        },
-        body: JSON.stringify(payloadPagoLink),
-        cache: 'no-store',
-        signal: AbortSignal.timeout(15000),
-      }
-    );
+    const res = await fetch('https://api.pagolink.co/v1/checkout/sessions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': secretKey,
+      },
+      body: JSON.stringify(payloadPagoLink),
+      cache: 'no-store',
+      signal: AbortSignal.timeout(15000),
+    });
 
     const responseText = await res.text();
-
     let data: Record<string, unknown> = {};
-
     try {
       data = responseText ? JSON.parse(responseText) : {};
     } catch {
@@ -192,13 +191,11 @@ export async function POST(req: Request) {
         asiento,
         usuario: user.email,
       });
-
       return Response.json(
         {
-          error:
-            typeof data.message === 'string'
-              ? data.message
-              : 'PagoLink no pudo crear la sesión de pago.',
+          error: typeof data.message === 'string'
+            ? data.message
+            : 'PagoLink no pudo crear la sesión de pago.',
           code: data.code || 'PAGOLINK_SESSION_ERROR',
         },
         { status: 502 }
@@ -207,13 +204,10 @@ export async function POST(req: Request) {
 
     const checkoutUrl =
       typeof data.checkoutUrl === 'string' ? data.checkoutUrl : '';
-
     const sessionId =
       typeof data.sessionId === 'string' ? data.sessionId : '';
 
-    // No redirigir a una URL arbitraria devuelta por un proveedor.
     let checkoutHostValid = false;
-
     try {
       const parsedCheckoutUrl = new URL(checkoutUrl);
       checkoutHostValid =
@@ -229,7 +223,6 @@ export async function POST(req: Request) {
         sessionIdPresent: Boolean(sessionId),
         checkoutUrlPresent: Boolean(checkoutUrl),
       });
-
       return Response.json(
         { error: 'PagoLink devolvió una sesión incompleta o una URL inválida.' },
         { status: 502 }
@@ -240,6 +233,7 @@ export async function POST(req: Request) {
       sessionId,
       id_obra,
       asiento,
+      precioUsd,
       usuario: user.email,
     });
 
@@ -247,15 +241,14 @@ export async function POST(req: Request) {
       ok: true,
       sessionId,
       checkoutUrl,
+      amount: precioUsd.toFixed(2),
+      currency: 'USD',
       expiresAt: data.expiresAt || null,
       environment: data.environment || null,
     });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : 'Error desconocido';
-
+    const message = err instanceof Error ? err.message : 'Error desconocido';
     logger.error('Error creando sesión PagoLink hosted.', { message });
-
     return Response.json(
       { error: 'No se pudo crear la sesión de pago. Intenta nuevamente.' },
       { status: 500 }
